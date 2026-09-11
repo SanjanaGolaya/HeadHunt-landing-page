@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #FFFFFF; }
+  * { box-sizing: border-box; }
+  a { color: #0B0B0C; text-decoration: none; }
+  a:hover { color: #0B0B0C; }
+  ::selection { background: #0B0B0C; color: #fff; }
+  @keyframes hh-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @media (max-width: 940px) { [data-nav] { display: none !important; } }
+</style>
+</helmet>
+
+<div style="background:#FFFFFF;color:#0B0B0C;font-family:Archivo,system-ui,sans-serif;font-weight:400;overflow-x:hidden;min-height:100vh">
+
+  <header style="position:sticky;top:0;z-index:60;backdrop-filter:blur(24px) saturate(150%);background:rgba(255,255,255,.62);border-bottom:1px solid rgba(11,11,12,.1)">
+    <div style="max-width:1300px;margin:0 auto;padding:0 clamp(20px,4vw,44px);height:76px;display:flex;align-items:center;gap:44px">
+      <a href="index.html" style="color:#0B0B0C;font-size:17px;font-weight:500;letter-spacing:-.03em">HeadHunt</a>
+      <nav data-nav="" style="display:flex;align-items:center;gap:32px;margin-left:auto">
+        <a href="index.html#problem" style="color:#7A828C;font-size:14px;letter-spacing:-.01em">About</a>
+        <a href="index.html#approach" style="color:#7A828C;font-size:14px;letter-spacing:-.01em">How it works</a>
+        <a href="journal.html" style="color:#7A828C;font-size:14px;letter-spacing:-.01em">Journal</a>
+        <a href="pricing.html" style="color:#0B0B0C;font-size:14px;letter-spacing:-.01em">Pricing</a>
+        <a href="{{ signInHref }}" target="_blank" rel="noopener" style="color:#1C1F24;font-size:14px;letter-spacing:-.01em">Sign in</a>
+      </nav>
+      <a href="{{ calendlyHref }}" target="_blank" rel="noopener" style="margin-left:auto;background:linear-gradient(180deg,#26292E,#0B0B0C);color:#FFFFFF;font-weight:500;font-size:14px;letter-spacing:-.01em;padding:11px 20px;border-radius:10px;white-space:nowrap" style-hover="background:#000">Book a call</a>
+    </div>
+  </header>
+
+  <section style="position:relative;isolation:isolate;border-bottom:1px solid rgba(11,11,12,.1)">
+    <div style="position:absolute;inset:0;z-index:-1;background:radial-gradient(80% 80% at 50% 120%, #DCDEE2 0%, #FFFFFF 34%, rgba(255,255,255,0) 74%)"></div>
+    <div style="max-width:1300px;margin:0 auto;padding:clamp(72px,10vw,130px) clamp(20px,4vw,44px) clamp(80px,10vw,130px);animation:hh-rise .8s cubic-bezier(.2,.7,.2,1) both">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:44px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7A828C">Pricing</span>
+      </div>
+      <h1 style="font-size:clamp(40px,7vw,84px);line-height:.98;letter-spacing:-.05em;font-weight:300;margin:0;max-width:18ch;text-wrap:balance">We only win if you do.</h1>
+      <p style="font-size:clamp(16px,1.5vw,19px);line-height:1.55;color:#7A828C;margin:32px 0 0;max-width:44ch;letter-spacing:-.012em">No retainer, no per-seat fee, no charge for the search itself.</p>
+
+      <div style="margin-top:clamp(56px,7vw,86px);display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:stretch">
+        <div style="border-radius:20px;padding:clamp(30px,3.4vw,44px);background:linear-gradient(168deg,rgba(11,11,12,.14),rgba(11,11,12,.014) 46%,rgba(11,11,12,.012));border:1px solid rgba(11,11,12,.17);backdrop-filter:blur(24px);box-shadow:0 40px 90px -50px rgba(11,11,12,.55), inset 0 1px 0 rgba(255,255,255,.5)">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#7A828C">Success fee</div>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-top:26px">
+            <span style="font-size:clamp(64px,10vw,116px);line-height:.82;letter-spacing:-.06em;font-weight:300;background:linear-gradient(180deg,#0B0B0C,#6B7280);-webkit-background-clip:text;background-clip:text;color:transparent">12%</span>
+          </div>
+          <div style="font-size:17px;color:#4B5158;margin-top:26px;letter-spacing:-.015em;line-height:1.5">of the hire's first-year CTC</div>
+          <div style="margin-top:34px;padding-top:26px;border-top:1px solid rgba(11,11,12,.12);display:grid;gap:14px">
+            <span style="font-size:15.5px;color:#7A828C;letter-spacing:-.01em">Invoiced on offer signing</span>
+            <span style="font-size:15.5px;color:#7A828C;letter-spacing:-.01em">Capped at ₹4L</span>
+            <span style="font-size:15.5px;color:#7A828C;letter-spacing:-.01em">No upfront retainer</span>
+          </div>
+          <a href="{{ calendlyHref }}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:38px;background:linear-gradient(180deg,#26292E,#0B0B0C);color:#FFFFFF;font-weight:500;font-size:15px;padding:15px 26px;border-radius:10px;letter-spacing:-.012em" style-hover="background:#000">Book a call</a>
+        </div>
+
+        
+      </div>
+      
+    </div>
+  </section>
+
+  
+
+  <footer style="border-top:1px solid rgba(11,11,12,.1)">
+    <div style="max-width:1300px;margin:0 auto;padding:44px clamp(20px,4vw,44px);display:flex;align-items:center;gap:32px;flex-wrap:wrap">
+      <a href="index.html" style="color:#0B0B0C;font-size:16px;font-weight:500;letter-spacing:-.03em">HeadHunt</a>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7A828C;margin-left:auto">NOTHING CHANGES THE WORLD FASTER THAN THE RIGHT PERSON WORKING ON THE RIGHT PROBLEM.</span>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;calendlyHref&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;https://calendly.com/hire-headhuntdev/30min&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Links&quot;},&quot;signInHref&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;https://headhunt-alpha.vercel.app/&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Links&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      signInHref: this.props.signInHref ?? "https://headhunt-alpha.vercel.app/",
+      calendlyHref: this.props.calendlyHref ?? "https://calendly.com/hire-headhuntdev/30min"
+    };
+  }
+}
+</script>
+</body>
+</html>

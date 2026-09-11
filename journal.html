@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #FFFFFF; }
+  * { box-sizing: border-box; }
+  a { color: #0B0B0C; text-decoration: none; }
+  a:hover { color: #0B0B0C; }
+  ::selection { background: #0B0B0C; color: #fff; }
+  @keyframes hh-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @media (max-width: 940px) { [data-nav] { display: none !important; } }
+</style>
+</helmet>
+
+<div style="background:#FFFFFF;color:#0B0B0C;font-family:Archivo,system-ui,sans-serif;font-weight:400;overflow-x:hidden;min-height:100vh;display:flex;flex-direction:column">
+
+  <header style="position:sticky;top:0;z-index:60;backdrop-filter:blur(24px) saturate(150%);background:rgba(255,255,255,.62);border-bottom:1px solid rgba(11,11,12,.1)">
+    <div style="max-width:1300px;margin:0 auto;padding:0 clamp(20px,4vw,44px);height:76px;display:flex;align-items:center;gap:44px">
+      <a href="index.html" style="color:#0B0B0C;font-size:17px;font-weight:500;letter-spacing:-.03em">HeadHunt</a>
+      <nav data-nav="" style="display:flex;align-items:center;gap:32px;margin-left:auto">
+        <a href="index.html#testimonials" style="color:#7A828C;font-size:14px;letter-spacing:-.01em">About</a>
+        <a href="index.html#approach" style="color:#7A828C;font-size:14px;letter-spacing:-.01em">How it works</a>
+        <a href="journal.html" style="color:#0B0B0C;font-size:14px;letter-spacing:-.01em">Journal</a>
+        <a href="pricing.html" style="color:#7A828C;font-size:14px;letter-spacing:-.01em">Pricing</a>
+        <a href="{{ signInHref }}" target="_blank" rel="noopener" style="color:#1C1F24;font-size:14px;letter-spacing:-.01em">Sign in</a>
+      </nav>
+      <a href="{{ calendlyHref }}" target="_blank" rel="noopener" style="margin-left:auto;background:linear-gradient(180deg,#26292E,#0B0B0C);color:#FFFFFF;font-weight:500;font-size:14px;letter-spacing:-.01em;padding:11px 20px;border-radius:10px;white-space:nowrap" style-hover="background:#000">Book a call</a>
+    </div>
+  </header>
+
+  <section id="journal" style="position:relative;flex:1">
+    <div style="max-width:1300px;margin:0 auto;padding:clamp(72px,10vw,130px) clamp(20px,4vw,44px) clamp(80px,10vw,130px);animation:hh-rise .8s cubic-bezier(.2,.7,.2,1) both">
+      <div style="margin-bottom:clamp(40px,5vw,60px)">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:32px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7A828C">Latest</span>
+        </div>
+        <h1 style="font-size:clamp(40px,7vw,84px);line-height:.98;letter-spacing:-.05em;font-weight:300;margin:0">Journal</h1>
+        <p style="margin:24px 0 0;font-size:17px;color:#7A828C;letter-spacing:-.012em;max-width:46ch">Thoughts, insights, and updates from the HH team.</p>
+      </div>
+      <div style="display:grid">
+        <a href="article.html?a=skills-taxonomy" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:clamp(16px,3vw,44px);padding:clamp(24px,3vw,34px) 0;border-top:1px solid rgba(11,11,12,.1);align-items:baseline;color:#0B0B0C" style-hover="background:rgba(11,11,12,.03)">
+          <span style="display:block;font-size:clamp(19px,2.1vw,24px);line-height:1.2;letter-spacing:-.032em">What is a skills taxonomy and why do you need it?</span>
+          <span style="display:block;font-size:15.5px;line-height:1.5;color:#7A828C;letter-spacing:-.01em">Why founders should map skills before their first big hiring push</span>
+          <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7A828C">Aug 2026</span>
+          <span style="justify-self:start;padding:11px 22px;border:1px solid #0B0B0C;border-radius:0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#0B0B0C;white-space:nowrap">Read</span>
+        </a>
+        <a href="article.html?a=latent-career-optionality" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:clamp(16px,3vw,44px);padding:clamp(24px,3vw,34px) 0;border-top:1px solid rgba(11,11,12,.1);align-items:baseline;color:#0B0B0C" style-hover="background:rgba(11,11,12,.03)">
+          <span style="display:block;font-size:clamp(19px,2.1vw,24px);line-height:1.2;letter-spacing:-.032em">Latent Career Optionality</span>
+          <span style="display:block;font-size:15.5px;line-height:1.5;color:#7A828C;letter-spacing:-.01em">Why optionality is becoming the new safety net</span>
+          <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7A828C">June 2026</span>
+          <span style="justify-self:start;padding:11px 22px;border:1px solid #0B0B0C;border-radius:0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#0B0B0C;white-space:nowrap">Read</span>
+        </a>
+        <a href="article.html?a=sde3-pool-crisis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:clamp(16px,3vw,44px);padding:clamp(24px,3vw,34px) 0;border-top:1px solid rgba(11,11,12,.1);border-bottom:1px solid rgba(11,11,12,.1);align-items:baseline;color:#0B0B0C" style-hover="background:rgba(11,11,12,.03)">
+          <span style="display:block;font-size:clamp(19px,2.1vw,24px);line-height:1.2;letter-spacing:-.032em">Bangalore's quiet talent problem</span>
+          <span style="display:block;font-size:15.5px;line-height:1.5;color:#7A828C;letter-spacing:-.01em">Why the SDE 4 shortage should worry the whole ecosystem</span>
+          <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7A828C">May 2026</span>
+          <span style="justify-self:start;padding:11px 22px;border:1px solid #0B0B0C;border-radius:0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#0B0B0C;white-space:nowrap">Read</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid rgba(11,11,12,.1)">
+    <div style="max-width:1300px;margin:0 auto;padding:44px clamp(20px,4vw,44px);display:flex;align-items:center;gap:32px;flex-wrap:wrap">
+      <a href="index.html" style="color:#0B0B0C;font-size:16px;font-weight:500;letter-spacing:-.03em">HeadHunt</a>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7A828C;margin-left:auto">NOTHING CHANGES THE WORLD FASTER THAN THE RIGHT PERSON WORKING ON THE RIGHT PROBLEM.</span>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      signInHref: this.props.signInHref ?? "https://headhunt-alpha.vercel.app/",
+      calendlyHref: this.props.calendlyHref ?? "https://calendly.com/hire-headhuntdev/30min"
+    };
+  }
+}
+</script>
+</body>
+</html>

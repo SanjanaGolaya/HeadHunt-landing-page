@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #FFFFFF; color: #0B0B0C; font-family: 'Instrument Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #0B0B0C; text-decoration: none; }
+  a:hover { color: #5A6068; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;background:#FFFFFF">
+  <header style="border-bottom:1px solid rgba(11,11,12,.1)">
+    <div style="max-width:1300px;margin:0 auto;padding:22px clamp(20px,4vw,44px);display:flex;align-items:center;gap:28px">
+      <a href="index.html" style="font-size:16px;font-weight:500;letter-spacing:-.03em">HeadHunt</a>
+      <a href="journal.html" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#7A828C">← Back to journal</a>
+    </div>
+  </header>
+
+  <article style="flex:1;max-width:1300px;width:100%;margin:0 auto;padding:clamp(56px,8vw,110px) clamp(20px,4vw,44px) clamp(72px,9vw,120px)">
+    <div style="max-width:74ch">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7A828C">Journal</span>
+        <span style="width:4px;height:4px;background:rgba(11,11,12,.3)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7A828C">{{ date }}</span>
+        <span style="width:4px;height:4px;background:rgba(11,11,12,.3)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7A828C">{{ readTime }}</span>
+      </div>
+
+      <h1 style="margin:26px 0 0;font-size:clamp(32px,4.6vw,58px);line-height:1.03;letter-spacing:-.045em;font-weight:300;text-wrap:balance">{{ title }}</h1>
+      <p style="margin:24px 0 0;font-size:clamp(18px,1.8vw,22px);line-height:1.45;letter-spacing:-.022em;color:#5A6068;text-wrap:pretty">{{ standfirst }}</p>
+
+      <sc-if value="{{ isPlaceholder }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:clamp(40px,5vw,64px);padding:20px 24px;border:1px solid rgba(11,11,12,.14);background:#FFFFFF">
+          <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#7A828C">Placeholder copy — final article to follow</p>
+        </div>
+      </sc-if>
+
+      <div style="margin-top:clamp(40px,5vw,60px);display:flex;flex-direction:column;gap:24px">
+        <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="6">
+          <sc-if value="{{ b.isP }}" hint-placeholder-val="{{ true }}">
+            <p style="margin:0;font-size:clamp(17px,1.55vw,19.5px);line-height:1.62;letter-spacing:-.012em;color:#1C1F24;text-wrap:pretty">{{ b.text }}</p>
+          </sc-if>
+          <sc-if value="{{ b.isH }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin:clamp(16px,1.8vw,24px) 0 0;font-size:clamp(22px,2.3vw,28px);line-height:1.15;letter-spacing:-.032em;font-weight:400">{{ b.text }}</h2>
+          </sc-if>
+          <sc-if value="{{ b.isQ }}" hint-placeholder-val="{{ false }}">
+            <blockquote style="margin:clamp(10px,1.2vw,16px) 0;padding-left:clamp(20px,2.4vw,30px);border-left:1px solid rgba(11,11,12,.2);font-size:clamp(19px,2vw,24px);line-height:1.35;letter-spacing:-.028em;color:#0B0B0C;text-wrap:pretty">{{ b.text }}</blockquote>
+          </sc-if>
+          <sc-if value="{{ b.isLi }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline">
+              <span style="width:5px;height:5px;background:#0B0B0C"></span>
+              <span style="font-size:clamp(16px,1.5vw,18.5px);line-height:1.6;letter-spacing:-.012em;color:#1C1F24;text-wrap:pretty">{{ b.text }}</span>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+
+      <div style="margin-top:clamp(52px,6vw,80px);padding-top:clamp(28px,3.2vw,40px);border-top:1px solid rgba(11,11,12,.14);display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <a href="{{ calendlyHref }}" target="_blank" rel="noopener" style="background:linear-gradient(180deg,#26292E,#0B0B0C);color:#FFFFFF;font-weight:500;font-size:15px;padding:15px 28px;border-radius:10px;letter-spacing:-.012em" style-hover="background:#000">Book a call</a>
+        <a href="journal.html" style="border:1px solid rgba(11,11,12,.24);color:#1C1F24;font-size:15px;padding:15px 28px;border-radius:10px;letter-spacing:-.012em" style-hover="border-color:rgba(11,11,12,.5)">More from the journal</a>
+      </div>
+    </div>
+  </article>
+
+  <footer style="border-top:1px solid rgba(11,11,12,.1)">
+    <div style="max-width:1300px;margin:0 auto;padding:36px clamp(20px,4vw,44px);display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+      <a href="index.html" style="font-size:15px;font-weight:500;letter-spacing:-.03em">HeadHunt</a>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7A828C;margin-left:auto">NOTHING CHANGES THE WORLD FASTER THAN THE RIGHT PERSON WORKING ON THE RIGHT PROBLEM.</span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const P = (text) => ({ kind: "p", text });
+const H = (text) => ({ kind: "h", text });
+const Q = (text) => ({ kind: "q", text });
+const LI = (text) => ({ kind: "li", text });
+
+const PLACEHOLDER = [
+  P("This is placeholder body copy. It holds the shape of a finished piece so the layout, measure and rhythm can be judged before the real writing lands."),
+  H("A section heading"),
+  P("Sub-headings break the article into passages. Each one should carry a single idea, and the paragraphs beneath it should earn their place."),
+  Q("A pull quote lives here, for the one line worth remembering after the reader closes the tab."),
+  P("A closing paragraph, followed by whatever the piece is actually arguing. Placeholder text ends here."),
+];
+
+const POSTS = {
+  "latent-career-optionality": {
+    title: "Latent Career Optionality",
+    standfirst: "Careers used to be ladders. What replaced them looks more like a jungle gym — and the safety net is no longer stability, it is having options.",
+    date: "June 2026",
+    readTime: "7 min read",
+    placeholder: false,
+    body: [
+      P("Careers used to be described as ladders: a fixed set of rungs you climbed in order. That metaphor is breaking down. What is replacing it looks more like a jungle gym — lateral moves, reinventions and unexpected leaps, all shaped by a platform shift that is changing not just how work gets done, but what work is."),
+
+      H("This is not smarter tools. It is a platform shift."),
+      P("It is tempting to treat AI as a faster calculator or a better search engine. That framing undersells it. Yuval Noah Harari has argued that AI behaves less like a passive tool and more like an independent agent — capable of generating its own ideas and making its own decisions rather than executing instructions."),
+      P("The numbers track how fast this moved from theoretical to infrastructural. BOND's 2025 AI Trends Report found that most people testing GPT-4.5 in blind evaluations could not distinguish its answers from a human's. ChatGPT serves hundreds of millions of weekly users and generates billions in annual revenue — the profile of core infrastructure, not a novelty app."),
+      Q("Trying to out-compete AI on raw knowledge is a losing strategy."),
+      P("What holds up instead is closer to meta-intelligence: the capacity to think clearly, prioritise and adapt inside systems that keep changing shape. Adaptability was always a nice-to-have. It is becoming the baseline."),
+      P("One implication is worth sitting with. A job title no longer guarantees a growth path. Waiting for an employer, a school or a structured ladder to hand you your next opportunity is a riskier bet than it used to be. In an increasingly agentic environment, more of the human role becomes supervising, training and validating AI systems rather than executing tasks. The skill is not being the intelligence. It is managing it well."),
+
+      H("Traditional education was not built for this"),
+      P("Most schools and universities are still optimised for an industrial-era model: train people for a defined job inside a stable hierarchy. That model does not teach how to operate under uncertainty, build leverage, or work alongside AI as a collaborator."),
+      P("Learning is migrating out of classrooms and into the flow of work. McKinsey found that close to half of workers do not feel equipped to use AI effectively in their current roles, while organisations with strong internal learning cultures are considerably more likely to be recognised as innovation leaders. The World Economic Forum predicts roughly half the workforce will need meaningfully new skills in the years ahead."),
+      P("The conclusion is not to collect more credentials. It is to own your learning loop — build, experiment, reflect, repeat — because that cycle now moves faster than any curriculum can track."),
+
+      H("Optionality, not stability, is the real safety net"),
+      P("Career security used to come from being needed by one employer. Bill Gates has pointed out that a large share of knowledge work is automatable, and not on some distant timeline. When AI can approximate expertise, what is genuinely hard to replace is your point of view, your taste, and how quickly you adapt."),
+      Q("Your job is not your core asset. Your ability to create value in more than one context is."),
+      P("Solo operator, founder or full-time employee — risk is now constant across all three. The safety net is not the absence of risk. It is having options. In practice that means:"),
+      LI("Skills that can be monetised independently of any one employer"),
+      LI("Income diversified rather than drawn from a single source"),
+      LI("Intellectual property you own, not only contribute to"),
+      LI("Deliberate adaptability"),
+      LI("Full-time employment treated as one option among several"),
+      P("Daniel Priestley frames this as turning knowledge into a scalable financial asset — a personal brand, but just as easily a product, a newsletter, a course, or a system that keeps generating value without constant involvement."),
+
+      H("What AI-native actually means"),
+      P("Elena Verna draws a useful distinction: someone AI-native is not a person who uses AI tools occasionally. It is someone whose default working mode runs through AI first. That shows up as a few concrete traits."),
+      LI("Real ownership — you build things and you own the outcome."),
+      LI("Unlocked autonomy — you act without waiting for permission at every step."),
+      LI("Velocity as a moat — speed stops being a function of headcount and becomes a cultural default."),
+      LI("Cheap failure — more attempts, faster learning, constant iteration."),
+      P("The effect is higher output with fewer costly mistakes. Spotify and Duolingo already hire with AI fluency as an explicit criterion, and postings requiring AI skills have climbed steadily since 2018 even as broader IT postings declined. The shift is away from coordination-heavy organisations and toward lean teams built on fast feedback loops. The advantage goes to people who act concretely rather than theorise."),
+
+      H("Building a career that holds up"),
+      P("Reskill toward what is portable. The WEF's Future of Jobs research points to critical thinking, emotional intelligence, systems thinking and digital fluency as the most transferable skills going forward. In practice that can be as simple as leading your team's adoption of a new tool, or taking a cross-functional rotation."),
+      P("Develop real AI fluency. Not expert prompt writing — understanding how AI fits into workflows, strategic decisions and business trade-offs: how models work, how APIs and retrieval-augmented generation function, how to evaluate a tool for both value and ethical risk. Building something small yourself is the cheapest way to get there."),
+      P("Build reputation capital and IP. Where credentials are easy to fake or automate, what you have shown carries more weight than what you claim. Share your thinking and your process, not just polished outputs, and eventually own something concrete. Priestley's 7-11-4 framework captures the mechanic: trust builds once someone has been visible for roughly seven hours, across eleven interactions, on four platforms. The goal is not going viral. It is consistency that lets your work speak for you when you are not in the room."),
+
+      H("Why this is bigger than a job-market shift"),
+      P("Nassim Taleb's argument in The Black Swan is that resilience comes less from predicting what is next and more from being structurally ready for surprise. That is a fair description of optionality: staying prepared for the unknown while limiting downside exposure."),
+      LI("AI is not just a tool to learn. It is reshaping how people learn to think."),
+      LI("Optionality is not a luxury add-on to a career. It is the closest thing to stability available."),
+      LI("Careers function less like ladders and more like ecosystems each person designs."),
+      LI("The competition is not against AI. It is against inertia."),
+      Q("The people who come out ahead will not just use AI. They will build with it, and grow because of it."),
+    ],
+  },
+  "sde3-pool-crisis": {
+    title: "Bangalore's quiet talent problem",
+    standfirst: "We spoke to close to a hundred engineers at the SDE4 / Staff-1 level. A handful cleared the bar. That is not a hiring miss — it is a structural thinning of the exact layer India's next wave of startups will depend on.",
+    date: "May 2026",
+    readTime: "7 min read",
+    placeholder: false,
+    body: [
+      P("Over the last few months, screening senior individual-contributor roles in Bangalore, we ran into the same wall again and again. Close to a hundred conversations at the SDE4 / Staff-1 level, and only a handful of people cleared the bar for what the role actually demands."),
+      P("One bad search is a hiring miss. This is something else. It points to a thinning of the precise band of engineering talent the next decade depends on."),
+
+      H("The band that matters most"),
+      P("Not every engineering level carries equal weight for an ecosystem. Staff-1 and above is disproportionately important for a simple reason: these are the engineers who architect systems end-to-end, drive outcomes rather than tickets, and shape product direction. They are also, typically, one or two career decisions away from becoming the founders and CTOs a growing startup market needs."),
+      P("When this layer weakens, the effects cascade upward. Startups lose the technical backbone that lets them move fast without breaking everything. Larger companies find it harder to ship anything genuinely differentiated. The pipeline meant to produce the next generation of technical leaders silts up."),
+      Q("Right now, in Bangalore, that layer is thinner than the moment demands."),
+
+      H("How strong engineers quietly stall out"),
+      P("A pattern recurs across candidate conversations, and it is remarkably consistent."),
+      LI("An engineer starts strong. Solid fundamentals, fast early growth, usually shaped by a good product company or a startup."),
+      LI("They move to a large MNC and become one of many thousands, frequently in a role that supports rather than leads."),
+      LI("Over time the work stops asking anything uncomfortable of them. Ownership stays narrow, scope stays fixed, and nothing gets built from zero."),
+      P("The result is not dramatic. It is gradual. Call it comfortable mediocrity. The résumé still looks impressive and the logos are still recognisable, but the appetite for hard, ambiguous problems has quietly eroded."),
+      P("Some engineers catch themselves and deliberately move toward harder environments — it shows within minutes of talking to them. A larger group settles in. Well compensated, reasonably secure, no longer driven to disrupt their own trajectory. Individually rational. Collectively, a significant loss."),
+
+      H("Staff-level engineers are a leverage point, not a job title"),
+      P("Engineers at this level do work that is disproportionately hard to replace. They turn business ambition into technical strategy, they mentor the people coming up behind them, and they are who founders lean on precisely when the roadmap is unclear and the timeline is unreasonable."),
+      P("In a healthy ecosystem, a meaningful share of today's Staff-1 engineers in Bangalore should be tomorrow's CTOs and technical co-founders. When that trajectory breaks, the ecosystem does not just lose good engineers. It loses the founders it never produced."),
+      P("This is not an indictment of large companies — plenty offer world-class engineering experience. The more useful question is what engineers and their managers are optimising for. Is comfort being traded for ownership? Is a brand name being prioritised over growth? Are people staying in roles well past the point those roles still stretch them?"),
+
+      H("If you are in that band"),
+      LI("Audit your own trajectory. Are you growing faster than the market around you, or staying comfortably afloat inside a strong brand?"),
+      LI("Look for discomfort on purpose. If your role does not unsettle you at least a little, you are under-using your ceiling."),
+      LI("Push for outcomes, not tickets. Seek problems measured in business impact, not code shipped."),
+      LI("Reconnect with the ambition that got you here. Most people in this band are one or two hard decisions away from being the technical leaders the ecosystem needs."),
+      P("For hiring managers, the challenge runs the other way. Stop treating a strong logo as a substitute for evidence of ownership. Screen for curiosity and depth, not tenure and title. Build environments that stretch strong senior ICs instead of parking them."),
+
+      H("The stakes"),
+      P("India's startup wave is not hypothetical. It is already underway, and its success rests on a relatively thin layer of senior engineers capable of carrying outsized responsibility."),
+      P("If that layer stays complacent, underused, or funnelled into low-impact work for too long, the cost is not paid by any one company. It is paid by the ecosystem, in startups that never get their technical spine and founders who never emerge."),
+      Q("Is this pattern showing up in what you are seeing too — and what is anyone actually doing about it?"),
+    ],
+  },
+  "skills-taxonomy": {
+    title: "What is a skills taxonomy and why do you need it?",
+    standfirst: "At a large company a bad hire gets diluted across hundreds. At ten people, one misaligned hire in a key role stalls the whole team.",
+    date: "Aug 2026",
+    readTime: "6 min read",
+    placeholder: false,
+    body: [
+      P("If hiring feels harder than it used to, that is not founder anxiety. Sixty-one percent of US business leaders report that finding and attracting the right talent has become a growing problem. For an early-stage founder the difficulty compounds: no recruiting team, no years of hiring data, and calls made under time pressure against a small applicant pool."),
+      P("There is a subtler trap inside this. Research suggests years of experience alone is a weak predictor of whether someone has the specific competencies your role needs. A candidate with eight years on a résumé and one with three can have wildly different real capability, and pedigree-based hiring papers over that gap rather than closing it."),
+
+      H("The skills gap moves faster than job descriptions"),
+      P("Skill requirements are not static. LinkedIn's 2023 Workplace Learning Report found the skill sets tied to a given job have shifted by roughly 25% since 2015, and that shift is projected to double by 2027."),
+      Q("The job description you wrote for your first engineering hire two years ago may already describe a role that no longer exists."),
+      P("The fix is simple in principle and rarely done well early. Get precise about the skills a role actually requires, not the job title. Then make sure the people you hire and promote genuinely have those skills, rather than a résumé that implies them. The tool that makes both possible is a skills taxonomy: a structured map of the hard and soft skills tied to each role in your company."),
+
+      H("Why it matters more, not less, at ten people"),
+      P("It is easy to dismiss a taxonomy as enterprise HR machinery. In practice the opposite holds. At a large company a bad hire gets diluted across hundreds of others. At an early-stage startup a single misaligned hire in a key role quietly stalls the team, because there is no depth to absorb the mismatch."),
+      P("A lightweight taxonomy per role — even a rough one — gives you:"),
+      LI("A sharper job description instead of a generic template pulled off a job board"),
+      LI("A way to interview for capability instead of years-of-experience proxies"),
+      LI("A basis for deciding what to teach a hire versus what they must already know"),
+      LI("Early clarity on internal growth paths, which matters enormously for retention when you cannot compete on cash"),
+      LI("Objective footing for performance and promotion decisions, before tenure starts doing that job by default"),
+      P("Nearly nine in ten L&D professionals say tracking skills data to proactively up- and reskill employees is essential. Most early-stage companies have no L&D function, so the founder ends up doing this work informally anyway. Making it explicit saves time later."),
+
+      H("A founder-sized version"),
+      P("You do not need software or a consultant for your first ten to twenty hires. Three steps get most of the value."),
+      P("First, catalogue the skills the role actually needs. Start broad, stay specific to the role, and resist copying a template. A founding engineer: coding, debugging, technical judgment under ambiguity, stack fluency, communication with non-technical teammates. A first salesperson: CRM fluency, product knowledge, objection handling, communication, comfort with an unproven pitch."),
+      P("Second, break each skill into clusters — the sub-skills that make up a broader competency. Teamwork becomes collaboration, conflict resolution, communication, team-building. Debugging becomes technical knowledge, error analysis, structured problem-solving, persistence. This is the step that turns a vague “we need someone strong in sales” into a concrete interview question."),
+      P("Third, lay it out as a simple hierarchy and prioritise. Broad categories on top, clusters underneath, one layer deeper where it helps. You do not need every role on day one — start with the two or three where a mis-hire would hurt most, usually the first technical hire and the first revenue hire."),
+
+      H("Where it pays off"),
+      P("Early-stage companies rarely out-pay bigger employers, which makes growth and clarity two of the few retention levers a founder controls. Most leave it on the table: survey data shows only a small share of employees feel actively encouraged to move into a new role, take on a new skill deliberately, or build a development plan."),
+      P("A basic taxonomy addresses all three. An early hire can compare the skills of their current role against the one they want to grow into. Founder and hire can jointly name the gaps standing between them and the next level, instead of relying on gut-feel reviews. That shared language becomes the basis for real development conversations."),
+      Q("The value is not the document. It is that everyone on a small team holds the same picture of what good looks like."),
+    ],
+  },
+};
+
+class Component extends DCLogic {
+  renderVals() {
+    let slug = "latent-career-optionality";
+    try {
+      const q = new URLSearchParams(window.location.search).get("a");
+      if (q && POSTS[q]) slug = q;
+    } catch (e) { /* file:// or sandboxed — fall back to the first post */ }
+    const post = POSTS[slug];
+    return {
+      title: post.title,
+      standfirst: post.standfirst,
+      date: post.date,
+      readTime: post.readTime,
+      isPlaceholder: !!post.placeholder,
+      blocks: post.body.map((b) => ({
+        text: b.text,
+        isP: b.kind === "p",
+        isH: b.kind === "h",
+        isQ: b.kind === "q",
+        isLi: b.kind === "li",
+      })),
+      calendlyHref: this.props.calendlyHref ?? "https://calendly.com/hire-headhuntdev/30min",
+    };
+  }
+}
+</script>
+</body>
+</html>
