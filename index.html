@@ -69,6 +69,27 @@
   @keyframes hh-marquee { from { transform: translate3d(0,0,0); } to { transform: translate3d(-50%,0,0); } }
   @keyframes hh-marquee-rev { from { transform: translate3d(-50%,0,0); } to { transform: translate3d(0,0,0); } }
   @media (prefers-reduced-motion: reduce) { [data-marquee-track] { animation: none !important; } }
+
+  /* ---------- responsive: tablet & phone ---------- */
+  @media (max-width: 900px) {
+    [data-hero-grid] { grid-template-columns: 1fr !important; gap: clamp(28px,5vw,44px) !important; }
+    [data-agrid] { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 760px) {
+    [data-pgrid] { grid-template-columns: 1fr !important; }
+    [data-pgrid] [data-pcell] { border-left: 0 !important; border-top: 1px solid rgba(11,11,12,.1) !important; }
+    [data-pgrid] [data-pcell]:first-child { border-top: 0 !important; }
+    [data-tcards] { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 560px) {
+    [data-hh-bar][data-phase="0"] { gap: 12px; padding: 0 14px; }
+    [data-hh-bar][data-phase="1"], [data-hh-bar][data-phase="2"] { gap: 10px; padding: 0 12px; }
+    [data-hh-cta] { font-size: 13px !important; padding: 10px 14px !important; }
+    [data-hero-primary], [data-hero-ghost] { flex: 1 1 100%; text-align: center; }
+  }
+  @media (hover: none) {
+    [data-tcards]:hover [data-tcard] { transform: none; opacity: 1; box-shadow: 0 30px 70px -50px rgba(0,0,0,.2); }
+  }
 </style>
 <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
 <script src="https://assets.calendly.com/assets/external/widget.js" async=""></script>
@@ -128,7 +149,7 @@ document.addEventListener("click", function (e) {
   </header>
 
   <section id="top" data-hero-section="" style="position:relative;isolation:isolate;border-bottom:1px solid rgba(11,11,12,.1)">
-    <div style="max-width:1300px;margin:0 auto;padding:clamp(120px,13vw,168px) clamp(20px,4vw,44px) clamp(72px,9vw,112px);display:grid;grid-template-columns:minmax(300px,1fr) minmax(320px,1.06fr);gap:clamp(36px,5vw,72px);align-items:center">
+    <div data-hero-grid="" style="max-width:1300px;margin:0 auto;padding:clamp(120px,13vw,168px) clamp(20px,4vw,44px) clamp(72px,9vw,112px);display:grid;grid-template-columns:minmax(300px,1fr) minmax(320px,1.06fr);gap:clamp(36px,5vw,72px);align-items:center">
       <div style="animation:hh-rise .9s cubic-bezier(.2,.7,.2,1) both">
         <h1 style="font-size:clamp(30px,3.7vw,52px);line-height:1.04;letter-spacing:-.042em;font-weight:400;margin:0;color:#0B0B0C;text-wrap:balance"><span style="color:#FF5C00">It's 2034.</span> We're looking back and laughing at the absurdity of hiring people off <span data-hero-accent="" style="color:#5A6068">a keyword dump.</span></h1>
         <div style="display:flex;gap:12px;margin-top:clamp(28px,3.2vw,40px);flex-wrap:wrap">
@@ -218,7 +239,7 @@ document.addEventListener("click", function (e) {
       </div>
       <h2 style="font-size:clamp(30px,4.6vw,56px);line-height:1.02;letter-spacing:-.045em;font-weight:400;margin:0;max-width:24ch;text-wrap:balance;color:#0B0B0C">Any of these sound familiar?</h2>
 
-      <div style="margin-top:clamp(48px,6vw,76px);border-top:1px solid #0B0B0C;border-bottom:1px solid #0B0B0C;display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr))">
+      <div data-pgrid="" style="margin-top:clamp(48px,6vw,76px);border-top:1px solid #0B0B0C;border-bottom:1px solid #0B0B0C;display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr))">
         <div data-pcell="" style="padding:clamp(30px,3.2vw,44px) clamp(24px,2.6vw,38px)">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#FF5C00">01</div>
           <h3 style="margin:clamp(24px,2.6vw,34px) 0 0;font-size:clamp(16px,1.35vw,18px);line-height:1.3;letter-spacing:-.018em;font-weight:500;color:#0B0B0C">Too many candidates</h3>
@@ -318,7 +339,7 @@ document.addEventListener("click", function (e) {
       </div>
       <h2 style="font-size:clamp(32px,5.4vw,64px);line-height:1.02;letter-spacing:-.045em;font-weight:400;margin:0 0 clamp(56px,7vw,86px);max-width:18ch;text-wrap:balance">How we find the people others don't.</h2>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:clamp(36px,5vw,72px);align-items:start">
+      <div data-agrid="" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:clamp(36px,5vw,72px);align-items:start">
         <div style="display:grid;gap:2px">
           <sc-for list="{{ steps }}" as="step" hint-placeholder-count="5">
             <button type="button" onClick="{{ step.onSelect }}" onMouseEnter="{{ step.onHover }}" onMouseLeave="{{ onLeaveSteps }}" style="all:unset;cursor:pointer;display:block;padding:24px 4px;border-top:1px solid rgba(11,11,12,.1);position:relative">
