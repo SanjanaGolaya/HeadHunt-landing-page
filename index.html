@@ -76,16 +76,37 @@
     [data-agrid] { grid-template-columns: 1fr !important; }
   }
   @media (max-width: 760px) {
+    [data-tcards] { grid-template-columns: 1fr !important; }
+  }
+  /* problem grid: pin the column count so the dividers always line up */
+  @media (min-width: 1140px) {
+    [data-pgrid] { grid-template-columns: repeat(3, minmax(0,1fr)) !important; }
+    [data-pgrid] [data-pcell] { border-left: 1px solid rgba(11,11,12,.1) !important; border-top: 0 !important; }
+    [data-pgrid] [data-pcell]:nth-child(3n+1) { border-left: 0 !important; }
+    [data-pgrid] [data-pcell]:nth-child(n+4) { border-top: 1px solid rgba(11,11,12,.1) !important; }
+  }
+  @media (min-width: 720px) and (max-width: 1139px) {
+    [data-pgrid] { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+    [data-pgrid] [data-pcell] { border-left: 1px solid rgba(11,11,12,.1) !important; border-top: 0 !important; }
+    [data-pgrid] [data-pcell]:nth-child(odd) { border-left: 0 !important; }
+    [data-pgrid] [data-pcell]:nth-child(n+3) { border-top: 1px solid rgba(11,11,12,.1) !important; }
+  }
+  @media (max-width: 719px) {
     [data-pgrid] { grid-template-columns: 1fr !important; }
     [data-pgrid] [data-pcell] { border-left: 0 !important; border-top: 1px solid rgba(11,11,12,.1) !important; }
     [data-pgrid] [data-pcell]:first-child { border-top: 0 !important; }
-    [data-tcards] { grid-template-columns: 1fr !important; }
   }
   @media (max-width: 560px) {
     [data-hh-bar][data-phase="0"] { gap: 12px; padding: 0 14px; }
     [data-hh-bar][data-phase="1"], [data-hh-bar][data-phase="2"] { gap: 10px; padding: 0 12px; }
     [data-hh-cta] { font-size: 13px !important; padding: 10px 14px !important; }
     [data-hero-primary], [data-hero-ghost] { flex: 1 1 100%; text-align: center; }
+  }
+  @media (max-width: 900px) {
+    [data-note] { position: static !important; left: auto !important; top: auto !important;
+      transform: rotate(-3deg) !important; flex: 0 0 100% !important;
+      max-width: min(210px, 56vw) !important; width: auto !important; height: auto !important;
+      margin: 30px auto 0 !important; }
   }
   @media (hover: none) {
     [data-tcards]:hover [data-tcard] { transform: none; opacity: 1; box-shadow: 0 30px 70px -50px rgba(0,0,0,.2); }
@@ -509,7 +530,7 @@ document.addEventListener("click", function (e) {
         <a data-calendly="" href="https://calendly.com/hire-headhuntdev/30min" target="_blank" rel="noopener" style="background:linear-gradient(180deg,#26292E,#0B0B0C);color:#FFFFFF;font-weight:500;font-size:16px;padding:17px 30px;border-radius:10px;letter-spacing:-.012em" style-hover="background:#fff">Book a call</a>
         <a href="https://headhunt-alpha.vercel.app/login" target="_blank" rel="noopener" style="border:1px solid rgba(11,11,12,.2);color:#1C1F24;font-size:16px;padding:17px 30px;border-radius:10px;background:linear-gradient(160deg,rgba(11,11,12,.06),rgba(11,11,12,.025));backdrop-filter:blur(24px) saturate(150%);box-shadow:inset 0 1px 0 rgba(255,255,255,.95);letter-spacing:-.012em" style-hover="border-color:rgba(255,255,255,.34)">Sign in</a>
 
-        <img src="assets/handwritten-note.png" alt="Welcome home — Saujanya Golaya" style="position:absolute;left:100%;margin-left:clamp(16px,2vw,34px);top:50%;width:clamp(150px,17vw,220px);height:auto;opacity:.88;transform:translateY(-50%) rotate(-3deg);pointer-events:none">
+        <img data-note="" src="assets/handwritten-note.png" alt="Welcome home — Saujanya Golaya" style="position:absolute;left:100%;margin-left:clamp(16px,2vw,34px);top:50%;width:clamp(150px,17vw,220px);height:auto;opacity:.88;transform:translateY(-50%) rotate(-3deg);pointer-events:none">
       </div></div>
     </div>
   </section>
