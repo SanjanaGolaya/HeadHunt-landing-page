@@ -71,27 +71,29 @@
   @media (prefers-reduced-motion: reduce) { [data-marquee-track] { animation: none !important; } }
 
   /* ---------- responsive: tablet & phone ---------- */
-  @media (max-width: 900px) {
+  @media (max-width: 720px) {
     [data-hero-grid] { grid-template-columns: 1fr !important; gap: clamp(28px,5vw,44px) !important; }
+  }
+  @media (max-width: 900px) {
     [data-agrid] { grid-template-columns: 1fr !important; }
   }
-  @media (max-width: 760px) {
+  @media (max-width: 716px) {
     [data-tcards] { grid-template-columns: 1fr !important; }
   }
   /* problem grid: pin the column count so the dividers always line up */
-  @media (min-width: 1140px) {
+  @media (min-width: 1168px) {
     [data-pgrid] { grid-template-columns: repeat(3, minmax(0,1fr)) !important; }
     [data-pgrid] [data-pcell] { border-left: 1px solid rgba(11,11,12,.1) !important; border-top: 0 !important; }
     [data-pgrid] [data-pcell]:nth-child(3n+1) { border-left: 0 !important; }
     [data-pgrid] [data-pcell]:nth-child(n+4) { border-top: 1px solid rgba(11,11,12,.1) !important; }
   }
-  @media (min-width: 720px) and (max-width: 1139px) {
+  @media (min-width: 784px) and (max-width: 1167px) {
     [data-pgrid] { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
     [data-pgrid] [data-pcell] { border-left: 1px solid rgba(11,11,12,.1) !important; border-top: 0 !important; }
     [data-pgrid] [data-pcell]:nth-child(odd) { border-left: 0 !important; }
     [data-pgrid] [data-pcell]:nth-child(n+3) { border-top: 1px solid rgba(11,11,12,.1) !important; }
   }
-  @media (max-width: 719px) {
+  @media (max-width: 783px) {
     [data-pgrid] { grid-template-columns: 1fr !important; }
     [data-pgrid] [data-pcell] { border-left: 0 !important; border-top: 1px solid rgba(11,11,12,.1) !important; }
     [data-pgrid] [data-pcell]:first-child { border-top: 0 !important; }
@@ -102,7 +104,7 @@
     [data-hh-cta] { font-size: 13px !important; padding: 10px 14px !important; }
     [data-hero-primary], [data-hero-ghost] { flex: 1 1 100%; text-align: center; }
   }
-  @media (max-width: 900px) {
+  @media (max-width: 700px) {
     [data-note] { position: static !important; left: auto !important; top: auto !important;
       transform: rotate(-3deg) !important; flex: 0 0 100% !important;
       max-width: min(210px, 56vw) !important; width: auto !important; height: auto !important;
