@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
 <meta name="robots" content="noindex">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 <style>
 :root{--gut:clamp(20px,4vw,56px);--ink:#111315;--paper:#fcfcfb;--ground:#eef1f2;--muted:#62696f;--line:#d3d8db;--line2:#9ca5aa;--accent:#d94b24;--accent2:#b03a17;--panel:#f6f8f8}
 *{box-sizing:border-box}
@@ -26,8 +27,9 @@ a:hover{color:var(--accent2)}
 .bar .dim{color:#9ca5aa}
 .brand{display:flex;align-items:baseline;gap:13px}
 .wordmark{font-size:21px;font-weight:700;line-height:1;letter-spacing:.1em;text-transform:uppercase}
-.rule{width:1px;height:14px;background:#4a5054}
-.sub{font-size:14px;line-height:1;color:#9ca5aa}
+.rule{width:1px;height:16px;background:rgba(255,255,255,.35)}
+.brandsub{font-size:21px;font-weight:400;line-height:1;color:#fff;letter-spacing:.01em}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
 
 .steps{display:grid;grid-template-columns:repeat(4,1fr);background:var(--ground);border-bottom:1px solid var(--line);flex-shrink:0}
 .step{padding:13px 14px;border-top:3px solid var(--line)}
@@ -259,9 +261,9 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
    Both of these are meant to be public. They are safe in this file.
    ================================================================== */
 
-const CONFIG = {
-  SUPABASE_URL: 'https://qvqhgytpzcisezajegez.supabase.co',
-  SUPABASE_ANON_KEY: 'sb_publishable_Siu6wFPZ23QAXPYl_Vh9cw_V86jpzyO',
+const DEFAULTS = {
+  SUPABASE_URL: '',
+  SUPABASE_ANON_KEY: '',
 
   // Turn these on as you set each one up. Leave false and the flow
   // simply skips that step instead of breaking.
@@ -271,10 +273,17 @@ const CONFIG = {
   LINKEDIN_ENRICHMENT: false
 };
 
+// Everything above is overridden by config.js, which sits next to this
+// file and is the only file holding your keys. Never edit this block.
+const CONFIG = Object.assign({}, DEFAULTS, window.HH_CONFIG || {});
+
 /* ------------------------------------------------------------------ */
 
 const CONFIGURED = CONFIG.SUPABASE_URL.indexOf('http') === 0;
-const sb = CONFIGURED ? window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY) : null;
+let sb = null;
+try {
+  if (CONFIGURED && window.supabase) sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+} catch (e) { sb = null; }
 
 const API = {
 
@@ -299,7 +308,7 @@ const API = {
     if (!sb) return { ok: /^\d{6}$/.test(code), demo: true };
     const { data, error } = await sb.auth.verifyOtp({ email: email, token: code, type: 'email' });
     if (error) return { ok: false, reason: error.message };
-    await upsert({ email: email });
+    await upsert({ email: email, full_name: S.fullName, referred_by: S.referrer });
     return { ok: true, email: email, userId: data.user ? data.user.id : null };
   },
 
@@ -348,7 +357,7 @@ const API = {
     const user = await currentUser();
     if (!user) return { ok: false, reason: 'not signed in' };
     const { data, error } = await sb.from('referrals')
-      .insert({ referrer_id: user.id, linkedin: v.linkedin, email: v.email, note: v.why })
+      .insert({ referrer_id: user.id, referrer_name: v.from, linkedin: v.linkedin, email: v.email, note: v.why })
       .select().single();
     if (error) return { ok: false, reason: error.message };
     return { ok: true, id: data.id };
@@ -380,7 +389,8 @@ function log() {}
 
 const BLANK = {
   screen: 'curtain',
-  referrer: 'Arjun',
+  referrer: 'Sanjana',
+  fullName: '',
   auth: { email: '', provider: '', verified: false },
   contact: { channel: '', phone: '', linkedinDm: '', verified: false },
   consent: { profile: false, signalmap: false },
@@ -394,6 +404,24 @@ const BLANK = {
 };
 
 let S = load();
+applyInviteParam();
+
+function firstName(s) { return String(s || '').trim().split(/\s+/)[0] || ''; }
+
+function inviteLink() {
+  const base = window.location.origin + '/candidate';
+  const f = firstName(S.fullName);
+  return f ? base + '?from=' + encodeURIComponent(f) : base;
+}
+
+function applyInviteParam() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const from = (q.get('from') || '').replace(/[^A-Za-z .'-]/g, '').trim().slice(0, 40);
+    if (from) { S.referrer = from; save(); }
+    if (q.has('from')) history.replaceState({}, '', window.location.pathname);
+  } catch (e) { /* ignore */ }
+}
 
 function load() {
   try {
@@ -475,7 +503,7 @@ function answerOf(q) {
 
 function topbar(right) {
   return '<div class="bar">' +
-    '<div class="brand"><span class="wordmark">Headhunt</span><span class="rule"></span><span class="sub">candidate</span></div>' +
+    '<div class="brand"><span class="wordmark">Headhunt</span><span class="rule"></span><span class="brandsub">candidate</span></div>' +
     '<span class="mono tiny dim">' + (right || '') + '</span>' +
   '</div>';
 }
@@ -528,7 +556,7 @@ hero: function () { return '<div class="page hero">' + heroInner() + '</div>'; }
 
 identity: function () {
   const v = S.auth.email;
-  return '<div class="page">' + topbar('Vouched by ' + esc(S.referrer) + ' Mehta') + stepper(0) +
+  return '<div class="page">' + topbar('Vouched by ' + esc(S.referrer)) + stepper(0) +
     '<div class="body narrow">' +
       '<h2>Where should we reach you?</h2>' +
       '<p class="lede">One address, verified once. It is how every introduction starts.</p>' +
@@ -537,7 +565,9 @@ identity: function () {
         (cfg('APPLE_SIGNIN') ? '<button class="oauth" data-act="oauth-apple">' + aLogo() + '<span>Continue with Apple</span></button>' : '') +
       '</div>' +
       '<div class="or"><span class="line"></span><span class="mono tiny dim">or</span><span class="line"></span></div>' : '') +
-      '<label class="lbl">Work email</label>' +
+      '<label class="lbl">Your name</label>' +
+      '<input class="field" id="fullname" autocomplete="name" placeholder="First and last name" value="' + esc(S.fullName) + '">' +
+      '<label class="lbl mt">Work email</label>' +
       '<input class="field" id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@company.com" value="' + esc(v) + '">' +
       '<p class="err" id="email-err"></p>' +
     '</div>' +
@@ -546,7 +576,7 @@ identity: function () {
 },
 
 emailcode: function () {
-  return '<div class="page">' + topbar('Vouched by ' + esc(S.referrer) + ' Mehta') + stepper(0) +
+  return '<div class="page">' + topbar('Vouched by ' + esc(S.referrer)) + stepper(0) +
     '<div class="body narrow">' +
       '<p class="eyebrow">Step 2 of 2</p>' +
       '<h2>Check your inbox.</h2>' +
@@ -766,8 +796,8 @@ radar: function () {
             : '<p class="fine light">Both spent. Thank you.</p>') +
         '</div>' +
         (S.vouches.length ? '<div class="rows mt">' + S.vouches.map(function (v) {
-          return '<div class="frow"><div><p class="fname">' + esc(v.email) + '</p><p class="mono tiny dim">' + esc(v.linkedin) + '</p></div>' +
-            '<span class="mono tiny dim">Sent</span><span></span></div>';
+          return '<div class="frow"><div><p class="fname">' + esc(v.email) + '</p><p class="mono tiny dim">' + esc(inviteLink()) + '</p></div>' +
+            '<button class="linkbtn mono tiny" data-act="copy-invite">Copy invite link</button><span></span></div>';
         }).join('') + '</div>' : '') +
       '</div>' +
       '<div class="rail right">' +
@@ -780,7 +810,7 @@ radar: function () {
           }).join('') +
         '</div>' +
         '<div class="note"><p class="fname">Not looking at all?</p><p class="fine">Pick the third one and forget we exist. We would rather hold you dormant for two years than lose you because we pushed.</p></div>' +
-        '<p class="mono tiny dim">Vouched by ' + esc(S.referrer) + ' Mehta · <a href="#" data-act="wipe">delete everything</a></p>' +
+        '<p class="mono tiny dim">Vouched by ' + esc(S.referrer) + ' · <a href="#" data-act="wipe">delete everything</a></p>' +
       '</div>' +
     '</div>' +
   '</div>';
@@ -939,12 +969,22 @@ begin: function () { go('identity'); },
 'go-radar': function () { go('radar'); },
 'go-vouch': function () { go('vouch'); },
 
+'copy-invite': function (el) {
+  const done = function () { el.textContent = 'Copied'; setTimeout(function () { el.textContent = 'Copy invite link'; }, 1600); };
+  try {
+    navigator.clipboard.writeText(inviteLink()).then(done, done);
+  } catch (e) { done(); }
+},
+
 'oauth-google': async function () { await oauth('google'); },
 'oauth-apple': async function () { await oauth('apple'); },
 
 'email-start': async function () {
   const email = val('email');
+  const name = val('fullname').trim();
+  if (name.length < 2) return err('email-err', 'Please tell us your name.');
   if (!okEmail(email)) return err('email-err', 'That does not look like an email address.');
+  S.fullName = name;
   err('email-err', '');
   busy('email-start', true, 'Sending…');
   S.auth.email = email; S.auth.provider = 'email'; save();
@@ -1090,7 +1130,7 @@ intent: function (t) {
   if (!okEmail(em)) return err('v-err', 'Their email is required.');
   err('v-err', '');
   busy('vouch-send', true, 'Sending…');
-  const r = await API.submitVouch({ linkedin: li, email: em, why: val('vwhy') });
+  const r = await API.submitVouch({ linkedin: li, email: em, why: val('vwhy'), from: S.fullName });
   if (!r.ok) { busy('vouch-send', false, 'Send the vouch'); return err('v-err', 'That did not go through.'); }
   S.vouches.push({ linkedin: li, email: em, id: r.id });
   save(); go('radar');
