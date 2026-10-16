@@ -1,0 +1,1154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HeadHunt · Candidate</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
+<meta name="robots" content="noindex">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{--ink:#111315;--paper:#fcfcfb;--ground:#eef1f2;--muted:#62696f;--line:#d3d8db;--line2:#9ca5aa;--accent:#d94b24;--accent2:#b03a17;--panel:#f6f8f8}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#1b1d1f;height:100%;overflow:hidden}
+body{font-family:'Source Serif 4',Georgia,'Times New Roman',serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#screen{width:1280px;height:900px;transform-origin:center;background:var(--paper);box-shadow:0 24px 70px rgba(0,0,0,.45);overflow:hidden}
+.page{width:1280px;height:900px;display:flex;flex-direction:column;background:var(--paper)}
+.mono{font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace}
+.tiny{font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.dim{color:var(--muted)}
+.accenttext{color:var(--accent)}
+a{color:var(--accent);text-decoration:none;font-size:14px}
+a:hover{color:var(--accent2)}
+
+.bar{display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:0 56px;background:var(--ink);color:#fff;flex-shrink:0}
+.bar .dim{color:#9ca5aa}
+.brand{display:flex;align-items:center;gap:13px}
+.wordmark{font-size:21px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.rule{width:1px;height:16px;background:#4a5054}
+.sub{font-size:14px;color:#9ca5aa}
+
+.steps{display:grid;grid-template-columns:repeat(4,1fr);background:var(--ground);border-bottom:1px solid var(--line);flex-shrink:0}
+.step{padding:13px 14px;border-top:3px solid var(--line)}
+.step:first-child{padding-left:56px}
+.step:last-child{padding-right:56px}
+.step .mono{color:#9ca5aa}
+.step .name{display:block;margin-top:2px;font-size:13px;color:var(--muted)}
+.step.done{border-top-color:var(--ink)}
+.step.done .mono{color:var(--muted)}
+.step.on{border-top-color:var(--accent)}
+.step.on .mono{color:var(--accent)}
+.step.on .name{color:var(--ink);font-weight:700}
+
+.body{padding:52px 56px 26px;flex-grow:1;overflow:auto}
+.body.narrow{max-width:760px}
+.body.center{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+h1{margin:0 0 16px;font-size:100px;font-weight:700;line-height:1.02;text-transform:uppercase}
+h2{margin:0 0 10px;font-size:44px;font-weight:700;line-height:1.04;max-width:760px}
+h2.big{font-size:64px}
+.lede{margin:0 0 30px;font-size:16px;line-height:1.6;color:var(--muted);max-width:620px}
+.lede.big{font-size:18px;color:#373c40}
+.eyebrow{margin:0 0 14px;font-family:'SFMono-Regular',Consolas,monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.fine{margin:0;font-size:13.5px;line-height:1.55;color:var(--muted)}
+.fine.light{color:#b9c0c4}
+.lbl{display:block;margin:0 0 7px;font-size:14px;font-weight:700}
+.mt{margin-top:22px}
+.err{margin:10px 0 0;min-height:18px;font-size:14px;color:#a63e1c}
+.grey{color:var(--line2)}
+
+.field{width:100%;max-width:520px;padding:0 16px;min-height:54px;border:1px solid var(--line2);border-radius:4px;background:#fff;font-family:inherit;font-size:16px;color:var(--ink);outline:none}
+.field:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(217,75,36,.12)}
+.field.wide{max-width:660px}
+.field.short{max-width:110px}
+.field.area{max-width:760px;padding:14px 16px;line-height:1.55;resize:vertical}
+select.field{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 20px) 24px,calc(100% - 14px) 24px;background-size:6px 6px;background-repeat:no-repeat}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;max-width:760px}
+.sub{margin-top:18px}
+
+.cta{display:inline-flex;align-items:center;gap:16px;padding:14px 26px;background:var(--ink);color:#fff;border:0;border-radius:0;cursor:pointer;font-family:inherit;font-size:19px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;transition:background 160ms}
+.cta:hover{background:#2b2f33}
+.cta.accent{background:var(--accent)}
+.cta.accent:hover{background:var(--accent2)}
+.cta.off{background:#b9c0c4;cursor:not-allowed}
+.ghost{display:inline-flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;font-family:inherit;font-size:15px;color:var(--ink);padding:0}
+.foot{display:flex;align-items:center;justify-content:space-between;padding:18px 56px;background:var(--ground);border-top:1px solid var(--line);flex-shrink:0}
+.footright{display:flex;align-items:center;gap:22px}
+
+.oauthrow{display:flex;gap:12px;margin-bottom:22px}
+.oauth{display:inline-flex;align-items:center;gap:11px;padding:14px 22px;border:1px solid var(--line2);border-radius:4px;background:#fff;cursor:pointer;font-family:inherit;font-size:15px;font-weight:700;color:var(--ink)}
+.oauth:hover{border-color:var(--ink)}
+.or{display:flex;align-items:center;gap:14px;max-width:520px;margin:0 0 22px}
+.or .line{flex:1;height:1px;background:var(--line)}
+
+.otp{display:flex;gap:12px;margin:0 0 20px}
+.cell{width:64px;height:76px;text-align:center;border:1px solid var(--line);border-radius:4px;background:#fff;font-family:inherit;font-size:34px;font-weight:700;color:var(--ink);outline:none}
+.cell:focus{border:1.5px solid var(--accent)}
+.row{display:flex;align-items:center}
+.row.gap{gap:20px}
+.vrule{width:1px;height:15px;background:var(--line)}
+.phonerow{display:flex;gap:10px;max-width:520px}
+
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;max-width:980px}
+.card{padding:22px;border:1px solid var(--line);border-radius:4px;background:#fff;cursor:pointer;min-height:150px;transition:border-color 140ms,background 140ms}
+.card:hover{border-color:var(--line2)}
+.card.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.card.tall{min-height:0;padding:13px 15px;margin-top:8px}
+.cardtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cardtop .mono{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card.on .cardtop .mono{color:#9ca5aa}
+.cardval{margin:0 0 6px;font-size:16px;font-weight:700}
+.cardhelp{margin:2px 0 0;font-size:13px;line-height:1.5;color:var(--muted)}
+.card.on .cardhelp{color:#b9c0c4}
+.dot{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line2)}
+.dot.on{background:var(--accent);border-color:var(--accent)}
+
+.panel{max-width:660px;margin-top:22px;padding:22px;border:1px solid var(--line);border-radius:4px;background:var(--panel)}
+.panel.dark{background:var(--ink);border-color:var(--ink);color:#fff;max-width:520px}
+.panel.dark .mono{color:#9ca5aa}
+.huge{margin:6px 0 10px;font-size:40px;font-weight:700;line-height:1;text-transform:uppercase}
+.consent{display:grid;grid-template-columns:26px minmax(0,1fr);gap:14px;margin:14px 0;cursor:pointer}
+.consent p{margin:0;font-size:14px;line-height:1.55}
+.check{width:22px;height:22px;margin-top:1px;border-radius:3px;border:1.5px solid var(--line2);background:#fff;display:flex;align-items:center;justify-content:center;color:#fff}
+.check svg{opacity:0}
+.check.on{background:var(--ink);border-color:var(--ink)}
+.check.on svg{opacity:1}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;max-width:780px}
+.chip{padding:9px 15px;border:1px solid var(--line);border-radius:4px;background:#fff;cursor:pointer;font-family:inherit;font-size:14px;color:var(--ink)}
+.chip:hover{border-color:var(--line2)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.chips.big .chip{padding:13px 20px;font-size:16px;border-color:var(--line2)}
+.chip.sm{font-size:13px;padding:7px 12px}
+
+.rows{max-width:860px;margin-top:8px}
+.frow{display:grid;grid-template-columns:minmax(0,1fr) 170px 76px;gap:18px;align-items:center;padding:13px 0;border-top:1px solid var(--line)}
+.frow:first-child{border-top-color:var(--line2)}
+.frow:last-child{border-bottom:1px solid var(--line2)}
+.fname{margin:0 0 2px;font-size:15px;font-weight:700}
+.rowsplit{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:6px}
+.upload{display:inline-flex;align-items:center;gap:9px;margin-top:12px;padding:10px 16px;border:1px solid var(--ink);border-radius:4px;cursor:pointer;font-size:14px;font-weight:700}
+
+.split{display:grid;grid-template-columns:322px minmax(0,1fr);flex-grow:1;overflow:hidden}
+.split.wide{grid-template-columns:minmax(0,1.25fr) 420px;padding:0}
+.rail{border-right:1px solid var(--line);background:var(--panel);padding:24px 24px 18px 56px;display:flex;flex-direction:column;overflow:auto}
+.rail.right{border-right:0;border-left:1px solid var(--line);background:var(--paper);padding:44px 56px 26px 32px;gap:18px}
+.railrow{display:grid;grid-template-columns:24px minmax(0,1fr);gap:11px;padding:8px 0;border-top:1px solid #e2e6e8;cursor:pointer}
+.railrow:first-of-type{border-top-color:var(--line2)}
+.railrow .mono{padding-top:3px;color:#b9c0c4}
+.rt{margin:0;font-size:13.5px;color:var(--line2)}
+.ra{margin:1px 0 0;font-size:12.5px;color:var(--line2)}
+.railrow.done .mono,.railrow.done .rt{color:var(--muted)}
+.railrow.on .mono{color:var(--accent)}
+.railrow.on .rt{color:var(--ink);font-weight:700}
+.railrow.on .ra{color:var(--accent)}
+.pushdown{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
+.note{border-left:4px solid #265f8c;padding:2px 0 2px 18px}
+
+.combo{position:relative;max-width:660px}
+.menu{display:none;position:absolute;top:60px;left:0;right:0;z-index:5;background:#fff;border:1px solid var(--ink);border-radius:4px;box-shadow:0 12px 30px rgba(17,19,21,.12);overflow:hidden}
+.menu.show{display:block}
+.mi{padding:11px 16px;font-size:15px;cursor:pointer}
+.mi:hover{background:var(--ground)}
+.moneyrow{display:flex;align-items:center;gap:12px}
+.money{display:flex;align-items:center;gap:8px;padding:0 20px;min-height:62px;min-width:300px;border:1px solid var(--ink);border-radius:4px;background:#fff;font-size:19px;color:var(--muted)}
+.money strong{font-size:26px;color:var(--ink)}
+.step-{width:48px;height:48px;border:1px solid var(--line2);border-radius:4px;background:#fff;font-size:22px;cursor:pointer;color:var(--ink)}
+
+.hero .herobody{padding:132px 56px 36px;flex-grow:1}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--ground)}
+.stat{padding:18px 22px 20px;border-right:1px solid var(--line)}
+.stat:first-child{padding-left:56px}
+.stat:last-child{border-right:0;padding-right:56px}
+.statnum{margin:0 0 3px;font-size:30px;font-weight:700;line-height:1}
+.herofoot{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:44px;align-items:center;padding:26px 56px 30px;border-top:1px solid var(--line)}
+.quote{max-width:560px;font-size:12px;line-height:1.7}
+
+.curtainwrap{position:relative;width:1280px;height:900px;overflow:hidden;cursor:pointer}
+.curtain{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--accent);color:#fff;transform:translateY(0);transition:transform 1100ms cubic-bezier(.76,0,.24,1)}
+.curtain.up{transform:translateY(-100%)}
+.curtain .bar{background:transparent}
+.curtainbody{flex-grow:1;display:flex;flex-direction:column;justify-content:center;padding:0 96px}
+.knock{margin:0 0 30px;max-width:940px;font-size:40px;line-height:1.28}
+.knock.bold{margin:0;font-weight:700}
+.curtainfoot{display:flex;align-items:center;justify-content:space-between;padding:0 56px 34px;color:rgba(255,255,255,.78);font-family:'SFMono-Regular',Consolas,monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+
+.pulse{width:54px;height:54px;margin-bottom:26px;border-radius:50%;border:2px solid var(--accent);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(.72);opacity:.35}50%{transform:scale(1);opacity:1}}
+
+#devbar{position:fixed;left:0;right:0;bottom:0;height:40px;display:flex;align-items:center;gap:16px;padding:0 18px;background:#111315;color:#8f979c;font-family:'SFMono-Regular',Consolas,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;z-index:20}
+#devbar button{background:none;border:1px solid #3d4246;border-radius:3px;color:#d8dcde;padding:6px 12px;font:inherit;cursor:pointer}
+#devbar button:hover{border-color:var(--accent)}
+#devbar{display:none}
+
+/* one-page terms */
+.body.tight{padding:34px 56px 20px}
+.headline{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;margin-bottom:20px}
+.headline h2{font-size:42px;margin-bottom:6px}
+.headline .lede{margin:0;max-width:640px}
+.qlist{max-width:1100px}
+.qrow{display:grid;grid-template-columns:300px minmax(0,1fr);gap:28px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.qrow:first-child{border-top-color:var(--line2)}
+.qrow:last-child{border-bottom:1px solid var(--line2)}
+.qrow.missing{background:#fdf2ee;box-shadow:-14px 0 0 #fdf2ee,14px 0 0 #fdf2ee}
+.qt{margin:0 0 2px;font-size:14.5px;font-weight:700;line-height:1.3}
+.qh{margin:0;font-size:12.5px;line-height:1.4;color:var(--muted)}
+.qctl{display:flex;flex-direction:column;gap:7px}
+.chips.tight{gap:6px}
+.chip.xs{font-size:12px;padding:5px 10px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:700px}
+.field.slim{max-width:320px;min-height:42px;font-size:15px}
+.moneyrow.slim{gap:8px}
+.moneyrow.slim .step-{width:40px;height:40px;font-size:19px}
+.money.slim{min-width:170px;min-height:42px;padding:0 14px;font-size:15px}
+.money.slim strong{font-size:20px}
+.combo .menu{top:48px;max-width:320px}
+
+</style>
+</head>
+<body>
+<div id="viewport"><div id="screen"></div></div>
+<div id="devbar">
+  <span>Demo build &middot; nothing leaves this page</span>
+  <button data-act="wipe">Start over</button>
+  <span id="where"></span>
+</div>
+<script>
+/* ==================================================================
+   HeadHunt Candidate — live build
+   ------------------------------------------------------------------
+   PASTE YOUR TWO SUPABASE VALUES HERE.
+   Supabase dashboard > Project Settings > API
+   Both of these are meant to be public. They are safe in this file.
+   ================================================================== */
+
+const CONFIG = {
+  SUPABASE_URL: 'https://qvqhgytpzcisezajegez.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_Siu6wFPZ23QAXPYl_Vh9cw_V86jpzyO ',
+
+  // Turn these on as you set each one up. Leave false and the flow
+  // simply skips that step instead of breaking.
+  GOOGLE_SIGNIN: false,
+  APPLE_SIGNIN: false,
+  WHATSAPP: false,
+  LINKEDIN_ENRICHMENT: false
+};
+
+/* ------------------------------------------------------------------ */
+
+const CONFIGURED = CONFIG.SUPABASE_URL.indexOf('http') === 0;
+const sb = CONFIGURED ? window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY) : null;
+
+const API = {
+
+  async startOAuth(provider) {
+    if (!sb) return { ok: false, reason: 'not-configured' };
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: provider,
+      options: { redirectTo: location.origin + '/candidate/reach' }
+    });
+    if (error) return { ok: false, reason: error.message };
+    return new Promise(function () {}); // the browser is leaving this page
+  },
+
+  async sendEmailCode(email) {
+    if (!sb) return { ok: true, demo: true };
+    const { error } = await sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true } });
+    if (error) return { ok: false, reason: error.message };
+    return { ok: true, expiresInSec: 3600 };
+  },
+
+  async verifyEmailCode(email, code) {
+    if (!sb) return { ok: /^\d{6}$/.test(code), demo: true };
+    const { data, error } = await sb.auth.verifyOtp({ email: email, token: code, type: 'email' });
+    if (error) return { ok: false, reason: error.message };
+    await upsert({ email: email });
+    return { ok: true, email: email, userId: data.user ? data.user.id : null };
+  },
+
+  // WhatsApp needs an approved Meta template, so it stays off until
+  // CONFIG.WHATSAPP is true. The option is hidden on the reach screen
+  // while it is false.
+  async sendWhatsAppCode(phone) { await wait(600); return { ok: true }; },
+  async verifyWhatsAppCode(phone, code) { await wait(500); return { ok: /^\d{6}$/.test(code) }; },
+
+  async saveContactChannel(channel, value) {
+    return upsert({ contact_channel: channel, contact_value: value, contact_verified: true });
+  },
+
+  // Until you have a licensed enrichment provider this stores the URL
+  // and the consent, and you read the profile yourself.
+  async fetchLinkedIn(url) {
+    await upsert({ linkedin_url: url, consent_profile: S.consent.profile, consent_signalmap: S.consent.signalmap });
+    if (!CONFIG.LINKEDIN_ENRICHMENT) return { ok: true, skipped: true, items: [] };
+    await wait(1500);
+    return { ok: true, items: [] };
+  },
+
+  async saveProfile(state) {
+    const t = state.terms;
+    return upsert({
+      work_url: state.builder.url,
+      work_kind: state.builder.kind,
+      work_kind_other: state.builder.other,
+      city: t.city,
+      cash_floor: t.floor,
+      cash_to_equity: t.swap,
+      team_size: t.team,
+      office_days: t.days,
+      earliest_start: t.start,
+      relocation: t.reloc,
+      industries_excluded: t.industry === 'some' ? t.industries : [],
+      trial_appetite: t.trial,
+      intent: state.intent
+    });
+  },
+
+  async saveIntent(intent) { return upsert({ intent: intent }); },
+
+  async submitVouch(v) {
+    if (!sb) { await wait(500); return { ok: true, id: 'demo' }; }
+    const user = await currentUser();
+    if (!user) return { ok: false, reason: 'not signed in' };
+    const { data, error } = await sb.from('referrals')
+      .insert({ referrer_id: user.id, linkedin: v.linkedin, email: v.email, note: v.why })
+      .select().single();
+    if (error) return { ok: false, reason: error.message };
+    return { ok: true, id: data.id };
+  }
+};
+
+async function currentUser() {
+  if (!sb) return null;
+  const { data } = await sb.auth.getUser();
+  return data ? data.user : null;
+}
+
+async function upsert(fields) {
+  if (!sb) return { ok: true, demo: true };
+  const user = await currentUser();
+  if (!user) return { ok: false, reason: 'not signed in' };
+  const row = Object.assign({ id: user.id, updated_at: new Date().toISOString() }, fields);
+  const { error } = await sb.from('candidates').upsert(row);
+  if (error) { console.warn('[headhunt] save failed:', error.message); return { ok: false, reason: error.message }; }
+  return { ok: true };
+}
+
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
+function log() {}
+
+
+/* ---------------------------- state ---------------------------- */
+
+const BLANK = {
+  screen: 'curtain',
+  referrer: 'Arjun',
+  auth: { email: '', provider: '', verified: false },
+  contact: { channel: '', phone: '', linkedinDm: '', verified: false },
+  consent: { profile: false, signalmap: false },
+  linkedinUrl: '',
+  found: null,
+  removed: [],
+  builder: { url: '', kind: '', other: '', repoIsBest: '' },
+  terms: { i: 0, city: '', floor: 48, swap: '', team: '', days: '', start: '', reloc: '', industry: '', industries: [], trial: '' },
+  intent: 'open',
+  vouches: []
+};
+
+let S = load();
+
+function load() {
+  try {
+    const raw = localStorage.getItem('hh_candidate_v1');
+    if (raw) return Object.assign(JSON.parse(JSON.stringify(BLANK)), JSON.parse(raw));
+  } catch (e) { /* private mode, blocked storage */ }
+  return JSON.parse(JSON.stringify(BLANK));
+}
+
+function save() {
+  try { localStorage.setItem('hh_candidate_v1', JSON.stringify(S)); } catch (e) { /* ignore */ }
+}
+
+function reset() {
+  S = JSON.parse(JSON.stringify(BLANK));
+  save();
+  render();
+}
+
+function go(screen) {
+  S.screen = screen;
+  save();
+  render();
+  const root = document.getElementById('screen');
+  if (root) { root.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(0.22,1,0.36,1)' }); }
+}
+
+/* ---------------------------- data ---------------------------- */
+
+const CITIES = [
+  'Bengaluru, Karnataka', 'Mumbai, Maharashtra', 'Pune, Maharashtra', 'Hyderabad, Telangana',
+  'Chennai, Tamil Nadu', 'Delhi, Delhi', 'Gurugram, Haryana', 'Noida, Uttar Pradesh',
+  'Kolkata, West Bengal', 'Ahmedabad, Gujarat', 'Jaipur, Rajasthan', 'Kochi, Kerala',
+  'Thiruvananthapuram, Kerala', 'Indore, Madhya Pradesh', 'Chandigarh, Chandigarh',
+  'Bhubaneswar, Odisha', 'Coimbatore, Tamil Nadu', 'Nagpur, Maharashtra', 'Surat, Gujarat',
+  'Lucknow, Uttar Pradesh', 'Visakhapatnam, Andhra Pradesh', 'Mysuru, Karnataka',
+  'Mangaluru, Karnataka', 'Vadodara, Gujarat', 'Guwahati, Assam', 'Dehradun, Uttarakhand',
+  'Singapore', 'Dubai, UAE', 'London, UK', 'Berlin, Germany', 'San Francisco, USA',
+  'New York, USA', 'Seattle, USA', 'Toronto, Canada', 'Remote, India'
+];
+
+const INDUSTRIES = [
+  'Fintech', 'Healthcare', 'Defence', 'Gambling', 'Crypto', 'Adtech',
+  'Ecommerce', 'Edtech', 'Logistics', 'Gaming', 'Social', 'Tobacco or alcohol'
+];
+
+const QUESTIONS = [
+  { key: 'city', short: 'Based in', title: 'Where are you based?', help: 'The city we match you against. Remote roles ignore it.', type: 'city' },
+  { key: 'floor', short: 'Cash floor', title: 'The number below which it is a no.', help: 'Fixed cash, not total comp. We never show it to a founder, we just refuse to waste your time under it.', type: 'money' },
+  { key: 'swap', short: 'Cash to equity', title: 'Would you swap cash for equity?', help: 'Some founders will trade a lower fixed number for a bigger grant on a one-year cliff. How much of your floor would you move?', type: 'pick',
+    options: [['0', 'None'], ['10', 'Up to 10%'], ['20', 'Up to 20%'], ['30', '30% or more']] },
+  { key: 'team', short: 'Team size', title: 'How big is the engineering team you want to join?', help: 'Where you would be landing on day one.', type: 'pick',
+    options: [['0', 'Zero, I want to be the first'], ['1-5', '1 to 5'], ['5-15', '5 to 15'], ['15+', '15+']] },
+  { key: 'days', short: 'Office days', title: 'How many days in an office?', help: 'Six-day weeks exist in this market. Say no now rather than at the offer.', type: 'pick',
+    options: [['0', 'Fully remote'], ['5', '5 days'], ['6', '6 days is okay']] },
+  { key: 'start', short: 'Earliest start', title: 'How soon could you start?', help: 'Notice periods are the single biggest reason good matches die.', type: 'pick',
+    options: [['now', 'Immediately'], ['30d', '30 days'], ['60d', '60 days'], ['90d', '90 days'], ['buyout', 'Only with a buyout']] },
+  { key: 'reloc', short: 'Relocation', title: 'Would you move cities?', help: 'Half our roles are Bengaluru, the rest are split across other major cities.', type: 'pick',
+    options: [['no', 'No'], ['right', 'For the right one'], ['yes', 'Yes']] },
+  { key: 'industry', short: 'Industry', title: 'Any industry you will not work in?', help: 'Most people are agnostic. If you are not, pick them from the list.', type: 'pick',
+    options: [['any', 'Industry agnostic'], ['some', 'There are some']] },
+  { key: 'trial', short: 'Working trials', title: 'How far will you go before an offer?', help: 'Work trials, take-home assessments and co-work months are common in this market. Tell us now what you will sit through.', type: 'pick',
+    options: [['none', 'Not interested'], ['take', 'Take-home only'], ['paid', 'Paid trial, 3 to 5 days'], ['week', 'A full week'], ['month', 'A co-work month']] }
+];
+
+function answerOf(q) {
+  const v = S.terms[q.key];
+  if (!v && v !== 0) return '';
+  if (q.type === 'city') return v;
+  if (q.type === 'money') return '₹' + v + ' LPA';
+  if (q.key === 'industry' && v === 'some') return S.terms.industries.length ? S.terms.industries.join(', ') : 'Some';
+  const hit = q.options.filter(function (o) { return o[0] === v; })[0];
+  return hit ? hit[1] : '';
+}
+
+
+/* ---------------------------- chrome ---------------------------- */
+
+function topbar(right) {
+  return '<div class="bar">' +
+    '<div class="brand"><span class="wordmark">Headhunt</span><span class="rule"></span><span class="sub">candidate</span></div>' +
+    '<span class="mono tiny dim">' + (right || '') + '</span>' +
+  '</div>';
+}
+
+const STEPS = ['Identity', 'Connect', 'Builder', 'Your terms'];
+function stepper(active) {
+  return '<div class="steps">' + STEPS.map(function (s, i) {
+    const on = i === active, done = i < active;
+    return '<div class="step ' + (on ? 'on' : (done ? 'done' : '')) + '">' +
+      '<span class="mono tiny">0' + (i + 1) + '</span><span class="name">' + s + '</span></div>';
+  }).join('') + '</div>';
+}
+
+function footer(left, btn, opts) {
+  opts = opts || {};
+  return '<div class="foot">' +
+    '<div>' + (left || '') + '</div>' +
+    '<div class="footright">' +
+      (opts.hint ? '<span class="mono tiny dim">' + opts.hint + '</span>' : '') +
+      (btn ? '<button class="cta ' + (opts.disabled ? 'off' : '') + ' ' + (opts.accent ? 'accent' : '') + '" data-act="' + btn.act + '"' + (opts.disabled ? ' disabled' : '') + '>' +
+        '<span>' + btn.label + '</span>' + arrow() + '</button>' : '') +
+    '</div></div>';
+}
+
+function arrow() { return '<svg width="20" height="13" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="7" x2="22" y2="7"/><polyline points="16 1 22 7 16 13"/></svg>'; }
+function backArrow() { return '<svg width="20" height="13" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="7" x2="2" y2="7"/><polyline points="8 1 2 7 8 13"/></svg>'; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+/* ---------------------------- screens ---------------------------- */
+
+const VIEWS = {
+
+curtain: function () {
+  return '<div class="curtainwrap" data-act="lift">' +
+    '<div class="page hero">' + heroInner() + '</div>' +
+    '<div class="curtain" id="curtain">' +
+      topbar('Invitation · expires in 14 days') +
+      '<div class="curtainbody">' +
+        '<p class="knock">You\'re not actively applying, and we\'d never find you on a job board. But if the right founder, at the right time, building the right thing came knocking, you\'d listen.</p>' +
+        '<p class="knock bold">This is that knock.</p>' +
+      '</div>' +
+      '<div class="curtainfoot"><span class="mono tiny">Click anywhere to open</span>' +
+        '<svg width="26" height="16" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="13" x2="12" y2="1"/><polyline points="5 8 12 1 19 8"/></svg>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+},
+
+hero: function () { return '<div class="page hero">' + heroInner() + '</div>'; },
+
+identity: function () {
+  const v = S.auth.email;
+  return '<div class="page">' + topbar('Vouched by ' + esc(S.referrer) + ' Mehta') + stepper(0) +
+    '<div class="body narrow">' +
+      '<h2>Where should we reach you?</h2>' +
+      '<p class="lede">One address, verified once. It is how every introduction starts.</p>' +
+      (hasOAuth() ? '<div class="oauthrow">' +
+        (cfg('GOOGLE_SIGNIN') ? '<button class="oauth" data-act="oauth-google">' + gLogo() + '<span>Continue with Google</span></button>' : '') +
+        (cfg('APPLE_SIGNIN') ? '<button class="oauth" data-act="oauth-apple">' + aLogo() + '<span>Continue with Apple</span></button>' : '') +
+      '</div>' +
+      '<div class="or"><span class="line"></span><span class="mono tiny dim">or</span><span class="line"></span></div>' : '') +
+      '<label class="lbl">Work email</label>' +
+      '<input class="field" id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@company.com" value="' + esc(v) + '">' +
+      '<p class="err" id="email-err"></p>' +
+    '</div>' +
+    footer('', { label: 'Send me a code', act: 'email-start' }, { hint: 'No password' }) +
+  '</div>';
+},
+
+emailcode: function () {
+  return '<div class="page">' + topbar('Vouched by ' + esc(S.referrer) + ' Mehta') + stepper(0) +
+    '<div class="body narrow">' +
+      '<p class="eyebrow">Step 2 of 2</p>' +
+      '<h2>Check your inbox.</h2>' +
+      '<p class="lede">Six digits are on their way to <strong>' + esc(S.auth.email) + '</strong>.</p>' +
+      otpBoxes('emailotp') +
+      '<div class="row gap">' +
+        '<span class="mono tiny dim" id="otp-timer">Expires in 09:58</span>' +
+        '<a href="#" data-act="email-resend">Send it again</a>' +
+        '<span class="vrule"></span>' +
+        '<a href="#" data-act="go-identity">Use a different address</a>' +
+      '</div>' +
+      '<p class="err" id="otp-err"></p>' +
+    '</div>' +
+    footer('', { label: 'Verify', act: 'email-verify' }) +
+  '</div>';
+},
+
+reach: function () {
+  const ch = S.contact.channel;
+  const opt = function (id, label, value, help) {
+    return '<div class="card pick ' + (ch === id ? 'on' : '') + '" data-act="reach-pick" data-id="' + id + '">' +
+      '<div class="cardtop"><span class="mono tiny">' + label + '</span><span class="dot ' + (ch === id ? 'on' : '') + '"></span></div>' +
+      '<p class="cardval">' + value + '</p><p class="cardhelp">' + help + '</p></div>';
+  };
+  return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(0) +
+    '<div class="body">' +
+      '<h2>How do you want to hear from us?</h2>' +
+      '<p class="lede">Only when there is a named company and a real role.</p>' +
+      '<div class="' + (cfg('WHATSAPP') ? 'grid3' : 'grid2') + '">' +
+        opt('email', 'Email', esc(S.auth.email), 'Verified already.') +
+        (cfg('WHATSAPP') ? opt('whatsapp', 'WhatsApp', '+91', 'We verify your number in the next step.') : '') +
+        opt('linkedin', 'LinkedIn', 'DMs', 'A DM and a connect request from sanjana-golaya in about 3 days.') +
+      '</div>' +
+      (ch === 'linkedin' ? '<div class="sub"><label class="lbl">Your LinkedIn</label><input class="field" id="lidm" placeholder="linkedin.com/in/…" value="' + esc(S.contact.linkedinDm) + '"></div>' : '') +
+      '<p class="err" id="reach-err"></p>' +
+    '</div>' +
+    footer('', { label: 'Continue', act: 'reach-next' }) +
+  '</div>';
+},
+
+wanumber: function () {
+  return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(0) +
+    '<div class="body narrow">' +
+      '<p class="eyebrow">WhatsApp · step 1 of 2</p>' +
+      '<h2>What number?</h2>' +
+      '<p class="lede">One message when a founder wants to meet you. Nothing else.</p>' +
+      '<div class="phonerow">' +
+        '<select class="field short" id="cc"><option>+91</option><option>+1</option><option>+44</option><option>+65</option><option>+971</option></select>' +
+        '<input class="field" id="phone" inputmode="numeric" placeholder="98765 43210" value="' + esc(S.contact.phone) + '">' +
+      '</div>' +
+      '<p class="err" id="wa-err"></p>' +
+    '</div>' +
+    footer('<a href="#" data-act="go-reach">Pick another channel</a>', { label: 'Send the code', act: 'wa-start' }) +
+  '</div>';
+},
+
+wacode: function () {
+  return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(0) +
+    '<div class="body narrow">' +
+      '<p class="eyebrow">WhatsApp · step 2 of 2</p>' +
+      '<h2>Confirm the number.</h2>' +
+      '<p class="lede">We sent six digits to <strong>' + esc(S.contact.phone) + '</strong> on WhatsApp.</p>' +
+      otpBoxes('waotp') +
+      '<div class="row gap">' +
+        '<a href="#" data-act="wa-resend">Send it again</a>' +
+        '<span class="vrule"></span>' +
+        '<a href="#" data-act="go-wanumber">Use a different number</a>' +
+      '</div>' +
+      '<p class="err" id="otp-err"></p>' +
+    '</div>' +
+    footer('', { label: 'Verify', act: 'wa-verify' }) +
+  '</div>';
+},
+
+connect: function () {
+  const both = S.consent.profile && S.consent.signalmap;
+  const box = function (key, text) {
+    return '<div class="consent" data-act="consent" data-key="' + key + '">' +
+      '<span class="check ' + (S.consent[key] ? 'on' : '') + '">' + tick() + '</span><p>' + text + '</p></div>';
+  };
+  return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(1) +
+    '<div class="body">' +
+      '<p class="eyebrow">Career trajectory · 1 of 5</p>' +
+      '<h2>Point us at your LinkedIn.</h2>' +
+      '<p class="lede">We read it and follow what it links to. You see everything we find on the next screen.</p>' +
+      '<input class="field wide" id="liurl" placeholder="linkedin.com/in/…" value="' + esc(S.linkedinUrl) + '">' +
+      '<div class="panel">' +
+        '<p class="mono tiny dim">Before we read anything <span class="accenttext">· both required</span></p>' +
+        box('profile', 'Read my public LinkedIn profile <span class="accenttext">and</span> the work it links to: portfolio, repos, writing, papers.') +
+        box('signalmap', 'Use it to build my signal map.') +
+        '<p class="fine">Withdraw either of these at any time. Withdrawing deletes what we read.</p>' +
+      '</div>' +
+      '<p class="err" id="li-err"></p>' +
+    '</div>' +
+    footer('', { label: 'Read my profile', act: 'li-fetch' }, { disabled: !both }) +
+  '</div>';
+},
+
+reading: function () {
+  return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(1) +
+    '<div class="body center">' +
+      '<div class="pulse"></div>' +
+      '<h2>Reading your profile.</h2>' +
+      '<p class="lede" id="readstat">Fetching the page…</p>' +
+    '</div>' +
+  '</div>';
+},
+
+found: function () {
+  const f = S.found || { items: [] };
+  const rows = f.items.filter(function (it) { return S.removed.indexOf(it.id) === -1; }).map(function (it) {
+    return '<div class="frow"><div><p class="fname">' + esc(it.label) + '</p><p class="mono tiny dim">' + esc(it.detail) + '</p></div>' +
+      '<span class="mono tiny dim">' + esc(it.tag) + '</span>' +
+      '<a href="#" data-act="remove" data-id="' + it.id + '">Remove</a></div>';
+  }).join('');
+  return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(1) +
+    '<div class="body">' +
+      '<h2>Here\'s what we found.</h2>' +
+      '<p class="lede">Remove anything you\'d rather we didn\'t hold.</p>' +
+      '<div class="rows">' + rows + '</div>' +
+      (S.removed.length ? '<p class="fine">' + S.removed.length + ' removed. <a href="#" data-act="undo">Undo</a></p>' : '') +
+    '</div>' +
+    footer('<span class="fine">Removed items are deleted, not hidden.</span>', { label: 'This is right', act: 'found-next' }) +
+  '</div>';
+},
+
+builder: function () {
+  const b = S.builder;
+  const kinds = [['gh', 'GitHub'], ['live', 'Something live'], ['writing', 'Writing'], ['paper', 'Paper'], ['hf', 'Hugging Face'], ['other', 'Other']];
+  return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(2) +
+    '<div class="body">' +
+      '<p class="eyebrow">Show us who you are as a builder</p>' +
+      '<h2>The best thing you\'ve built.</h2>' +
+      '<p class="lede">A repo, a product that\'s live, a paper, or a post about something that broke.</p>' +
+      '<input class="field wide" id="burl" placeholder="https://" value="' + esc(b.url) + '">' +
+      '<p class="lbl mt">What is it? <span class="accenttext">Required</span></p>' +
+      '<div class="chips">' + kinds.map(function (k) {
+        return '<button class="chip ' + (b.kind === k[0] ? 'on' : '') + '" data-act="kind" data-id="' + k[0] + '">' + k[1] + '</button>';
+      }).join('') + '</div>' +
+      (b.kind === 'other' ? '<div class="sub"><label class="lbl">In your words, what is it?</label><input class="field" id="bother" placeholder="A firmware rewrite, a dataset, a Figma plugin" value="' + esc(b.other) + '"></div>' : '') +
+      '<div class="panel mt">' +
+        '<div class="rowsplit"><p class="fname">Paxel profile <span class="mono tiny dim">Optional</span></p>' +
+        '<a href="https://paxel.ycombinator.com/" target="_blank" rel="noopener noreferrer">What Paxel is ↗</a></div>' +
+        '<p class="fine">Y Combinator\'s profile for engineers. If you keep one, export it and drop it here. It gives us your work in your own words.</p>' +
+        '<label class="upload"><input type="file" id="paxel" hidden><span>Upload export</span></label>' +
+        '<span class="mono tiny dim" id="paxelname"></span>' +
+      '</div>' +
+      '<p class="err" id="b-err"></p>' +
+    '</div>' +
+    footer('', { label: 'Continue', act: 'builder-next' }) +
+  '</div>';
+},
+
+terms: function () {
+  const t = S.terms;
+  const row = function (q, control) {
+    return '<div class="qrow" id="row-' + q.key + '">' +
+      '<div class="qlab"><p class="qt">' + q.title.replace(/\?$/, '') + '</p><p class="qh">' + q.help + '</p></div>' +
+      '<div class="qctl">' + control + '</div></div>';
+  };
+  const chips = function (q) {
+    return '<div class="chips">' + q.options.map(function (o) {
+      return '<button class="chip sm ' + (t[q.key] === o[0] ? 'on' : '') + '" data-act="pick" data-key="' + q.key + '" data-id="' + o[0] + '">' + o[1] + '</button>';
+    }).join('') + '</div>';
+  };
+
+  const rows = QUESTIONS.map(function (q) {
+    if (q.type === 'city') {
+      return row(q, '<div class="combo"><input class="field slim" id="city" placeholder="Start typing a city" autocomplete="off" value="' + esc(t.city) + '">' +
+        '<div class="menu" id="citymenu"></div></div>');
+    }
+    if (q.type === 'money') {
+      return row(q, '<div class="moneyrow slim"><button class="step-" data-act="floor" data-d="-2">−</button>' +
+        '<div class="money slim"><span>₹</span><strong>' + t.floor + '</strong><span>LPA</span></div>' +
+        '<button class="step-" data-act="floor" data-d="2">+</button></div>');
+    }
+    let c = chips(q);
+    if (q.key === 'industry' && t.industry === 'some') {
+      c += '<div class="chips tight">' + INDUSTRIES.map(function (n) {
+        return '<button class="chip xs ' + (t.industries.indexOf(n) > -1 ? 'on' : '') + '" data-act="ind" data-n="' + n + '">' + n + '</button>';
+      }).join('') + '</div>';
+    }
+    return row(q, c);
+  }).join('');
+
+  return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(3) +
+    '<div class="body tight">' +
+      '<div class="headline">' +
+        '<div><h2>Where you\'d actually join.</h2>' +
+        '<p class="lede">Filters, not preferences. If a role breaks one of these you never hear about it.</p></div>' +
+        '<span class="mono tiny dim">Private · never shown to founders</span>' +
+      '</div>' +
+      '<div class="qlist">' + rows + '</div>' +
+      '<p class="err" id="t-err"></p>' +
+    '</div>' +
+    footer('<span class="fine">Change any of these later. We check them again before any introduction.</span>',
+      { label: 'Submit my terms', act: 'terms-submit' }) +
+  '</div>';
+},
+
+radar: function () {
+  const modes = [['active', 'Actively looking', 'Everything that clears my terms.'],
+    ['open', 'Open to the right thing', 'Only when it is unusually good.'],
+    ['paused', 'Not now but keep me on the radar', 'Silence until I come back and change this.']];
+  const used = S.vouches.length;
+  return '<div class="page">' + topbar(esc(S.auth.email) + ' · stealth') +
+    '<div class="split wide">' +
+      '<div class="body">' +
+        '<p class="eyebrow">Signal map · 1 of 5 strands</p>' +
+        '<h2 class="big">You\'re on<br>the radar.</h2>' +
+        '<p class="lede big">The mandatory bit is done. From here we only write when there is a named company and a real role.</p>' +
+        '<div class="panel dark">' +
+          '<p class="mono tiny">You now have</p>' +
+          '<p class="huge">' + (2 - used) + ' referral' + (2 - used === 1 ? '' : 's') + '</p>' +
+          '<p class="fine light">Two for life, not two a year. If they are hired, 1% of their first-year CTC is yours on the day they sign.</p>' +
+          (used < 2 ? '<button class="cta accent" data-act="go-vouch"><span>Vouch for someone</span>' + arrow() + '</button>'
+            : '<p class="fine light">Both spent. Thank you.</p>') +
+        '</div>' +
+        (S.vouches.length ? '<div class="rows mt">' + S.vouches.map(function (v) {
+          return '<div class="frow"><div><p class="fname">' + esc(v.email) + '</p><p class="mono tiny dim">' + esc(v.linkedin) + '</p></div>' +
+            '<span class="mono tiny dim">Sent</span><span></span></div>';
+        }).join('') + '</div>' : '') +
+      '</div>' +
+      '<div class="rail right">' +
+        '<div class="panel">' +
+          '<p class="mono tiny dim">Signal your intent</p>' +
+          '<p class="fine">The only thing that decides whether we ever get in touch. Change it any time.</p>' +
+          modes.map(function (m) {
+            return '<div class="card pick tall ' + (S.intent === m[0] ? 'on' : '') + '" data-act="intent" data-id="' + m[0] + '">' +
+              '<p class="fname">' + m[1] + '</p><p class="cardhelp">' + m[2] + '</p></div>';
+          }).join('') +
+        '</div>' +
+        '<div class="note"><p class="fname">Not looking at all?</p><p class="fine">Pick the third one and forget we exist. We would rather hold you dormant for two years than lose you because we pushed.</p></div>' +
+        '<p class="mono tiny dim">Vouched by ' + esc(S.referrer) + ' Mehta · <a href="#" data-act="wipe">delete everything</a></p>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+},
+
+vouch: function () {
+  return '<div class="page">' + topbar(esc(S.auth.email) + ' · stealth') +
+    '<div class="body">' +
+      '<p class="eyebrow">Referral ' + (S.vouches.length + 1) + ' of 2 · <span class="accenttext">one of two you will ever have</span></p>' +
+      '<h2>Who are you vouching for?</h2>' +
+      '<p class="lede">They never see what you wrote. We do, and it is the first thing we read.</p>' +
+      '<div class="two">' +
+        '<div><label class="lbl">Their LinkedIn <span class="accenttext">Required</span></label>' +
+          '<input class="field" id="vli" placeholder="linkedin.com/in/…"></div>' +
+        '<div><label class="lbl">Their email <span class="accenttext">Required</span></label>' +
+          '<input class="field" id="vem" type="email" placeholder="name@company.com"></div>' +
+      '</div>' +
+      '<label class="lbl mt">Why do they belong here? <span class="mono tiny dim">Optional</span></label>' +
+      '<p class="fine">What makes them stand apart, and would you personally take a bet on them?</p>' +
+      '<textarea class="field area" id="vwhy" rows="4" placeholder="She rewrote our billing engine over one quarter while nobody was watching, then wrote the postmortem herself."></textarea>' +
+      '<p class="err" id="v-err"></p>' +
+    '</div>' +
+    footer('<button class="ghost" data-act="go-radar">' + backArrow() + '<span>Back</span></button>',
+      { label: 'Send the vouch', act: 'vouch-send' }, { hint: 'LinkedIn and email are the minimum' }) +
+  '</div>';
+}
+
+};
+
+/* ---------------------------- fragments ---------------------------- */
+
+function heroInner() {
+  return topbar('Invitation · expires in 14 days') +
+    '<div class="herobody"><h1>' + esc(S.referrer) + '<br><span class="grey">vouched for you.</span></h1>' +
+    '<p class="mono tiny dim">Elite talent. <span class="accenttext">Privately accessed.</span></p></div>' +
+    '<div class="stats">' +
+      stat('Top 1%', "Of India's tech talent") + stat('₹60LPA+', 'Avg. total comp') +
+      stat('Stealth', 'Always. No public profile') + stat('72 hrs', 'Avg. time to first introduction') +
+    '</div>' +
+    '<div class="herofoot"><p class="mono tiny dim quote">Nothing changes the world faster than the right person working on the right problem.</p>' +
+    '<div><button class="cta" data-act="begin"><span>Begin your profile</span>' + arrow() + '</button>' +
+    '<p class="mono tiny dim">Private by design. No public profile, ever.</p></div></div>';
+}
+function stat(a, b) { return '<div class="stat"><p class="statnum">' + a + '</p><p class="mono tiny dim">' + b + '</p></div>'; }
+function otpBoxes(id) {
+  let s = '<div class="otp" id="' + id + '">';
+  for (let i = 0; i < 6; i++) s += '<input class="cell" inputmode="numeric" maxlength="1" data-i="' + i + '">';
+  return s + '</div>';
+}
+function tick() { return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'; }
+function gLogo() { return '<svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M23 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.2a5.3 5.3 0 0 1-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.6z"/><path fill="#34A853" d="M12 24c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.7H1.8v3C3.7 21.4 7.6 24 12 24z"/><path fill="#FBBC05" d="M5.6 14.3a7.2 7.2 0 0 1 0-4.6v-3H1.8a12 12 0 0 0 0 10.6l3.8-3z"/><path fill="#EA4335" d="M12 4.8c1.7 0 3.2.6 4.4 1.7l3.3-3.3C17.7 1.2 15.1 0 12 0 7.6 0 3.7 2.6 1.8 6.7l3.8 3c.9-2.7 3.4-4.9 6.4-4.9z"/></svg>'; }
+function aLogo() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.9c0-2.4 2-3.6 2.1-3.6-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.7 0-1.9-.9-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.1 1.7 2.4 3 2.4 1.2 0 1.6-.8 3.1-.8 1.4 0 1.9.8 3.1.7 1.3 0 2.1-1.2 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.9zM14.6 5.2c.7-.8 1.1-2 1-3.2-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.5 2.9-1.3z"/></svg>'; }
+
+
+/* ---------------------------- render + events ---------------------------- */
+
+function render() {
+  const el = document.getElementById('screen');
+  el.innerHTML = (VIEWS[S.screen] || VIEWS.curtain)();
+  wire();
+}
+
+function val(id) { const e = document.getElementById(id); return e ? e.value.trim() : ''; }
+function err(id, msg) { const e = document.getElementById(id); if (e) e.textContent = msg || ''; }
+function busy(btnAct, on, label) {
+  const b = document.querySelector('[data-act="' + btnAct + '"]');
+  if (!b) return;
+  b.disabled = on;
+  b.classList.toggle('off', on);
+  if (label) b.querySelector('span').textContent = label;
+}
+function okEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s); }
+function okLinkedIn(s) { return /linkedin\.com\/(in|pub)\//i.test(s) || /^[\w-]{3,}$/.test(s); }
+
+function otpValue(wrapId) {
+  const w = document.getElementById(wrapId);
+  if (!w) return '';
+  return [].slice.call(w.querySelectorAll('.cell')).map(function (c) { return c.value; }).join('');
+}
+
+function wire() {
+  // OTP typing behaviour
+  ['emailotp', 'waotp'].forEach(function (id) {
+    const w = document.getElementById(id);
+    if (!w) return;
+    const cells = [].slice.call(w.querySelectorAll('.cell'));
+    cells[0].focus();
+    cells.forEach(function (c, i) {
+      c.addEventListener('input', function () {
+        c.value = c.value.replace(/\D/g, '').slice(0, 1);
+        if (c.value && cells[i + 1]) cells[i + 1].focus();
+      });
+      c.addEventListener('keydown', function (e) {
+        if (e.key === 'Backspace' && !c.value && cells[i - 1]) cells[i - 1].focus();
+      });
+      c.addEventListener('paste', function (e) {
+        const t = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+        if (!t) return;
+        e.preventDefault();
+        t.split('').forEach(function (d, n) { if (cells[n]) cells[n].value = d; });
+        cells[Math.min(t.length, 5)].focus();
+      });
+    });
+  });
+
+  // city typeahead
+  const city = document.getElementById('city');
+  if (city) {
+    const menu = document.getElementById('citymenu');
+    const draw = function () {
+      const q = city.value.toLowerCase();
+      const hits = CITIES.filter(function (c) { return !q || c.toLowerCase().indexOf(q) > -1; }).slice(0, 7);
+      menu.innerHTML = hits.map(function (c) { return '<div class="mi" data-city="' + c + '">' + c + '</div>'; }).join('');
+      menu.classList.toggle('show', hits.length > 0);
+    };
+    city.addEventListener('focus', draw);
+    city.addEventListener('input', draw);
+    menu.addEventListener('mousedown', function (e) {
+      const mi = e.target.closest('.mi');
+      if (!mi) return;
+      e.preventDefault();
+      S.terms.city = mi.dataset.city;
+      save(); render();
+    });
+    city.addEventListener('blur', function () { setTimeout(function () { menu.classList.remove('show'); }, 120); });
+  }
+
+  const paxel = document.getElementById('paxel');
+  if (paxel) paxel.addEventListener('change', function () {
+    const n = document.getElementById('paxelname');
+    if (n && paxel.files[0]) n.textContent = paxel.files[0].name;
+  });
+}
+
+document.addEventListener('click', function (e) {
+  const t = e.target.closest('[data-act]');
+  if (!t) return;
+  const act = t.dataset.act;
+  if (t.tagName === 'A') e.preventDefault();
+  ACTIONS[act] && ACTIONS[act](t, e);
+});
+
+const ACTIONS = {
+
+lift: function () {
+  const c = document.getElementById('curtain');
+  if (!c || c.classList.contains('up')) return;
+  c.classList.add('up');
+  setTimeout(function () { go('hero'); }, 1150);
+},
+
+begin: function () { go('identity'); },
+'go-identity': function () { go('identity'); },
+'go-reach': function () { go('reach'); },
+'go-wanumber': function () { go('wanumber'); },
+'go-radar': function () { go('radar'); },
+'go-vouch': function () { go('vouch'); },
+
+'oauth-google': async function () { await oauth('google'); },
+'oauth-apple': async function () { await oauth('apple'); },
+
+'email-start': async function () {
+  const email = val('email');
+  if (!okEmail(email)) return err('email-err', 'That does not look like an email address.');
+  err('email-err', '');
+  busy('email-start', true, 'Sending…');
+  S.auth.email = email; S.auth.provider = 'email'; save();
+  const r = await API.sendEmailCode(email);
+  if (!r.ok) { busy('email-start', false, 'Send me a code'); return err('email-err', 'We could not send that. Try again.'); }
+  go('emailcode');
+},
+
+'email-resend': async function () { await API.sendEmailCode(S.auth.email); err('otp-err', 'Sent again.'); },
+
+'email-verify': async function () {
+  const code = otpValue('emailotp');
+  if (code.length < 6) return err('otp-err', 'Enter all six digits.');
+  busy('email-verify', true, 'Checking…');
+  const r = await API.verifyEmailCode(S.auth.email, code);
+  if (!r.ok) { busy('email-verify', false, 'Verify'); return err('otp-err', 'That code did not work.'); }
+  S.auth.verified = true; save();
+  go('reach');
+},
+
+'reach-pick': function (t) { S.contact.channel = t.dataset.id; save(); render(); },
+
+'reach-next': async function () {
+  const ch = S.contact.channel;
+  if (!ch) return err('reach-err', 'Pick one channel.');
+  if (ch === 'whatsapp') return go('wanumber');
+  if (ch === 'linkedin') {
+    const u = val('lidm');
+    if (!okLinkedIn(u)) return err('reach-err', 'Add your LinkedIn so we can reach you there.');
+    S.contact.linkedinDm = u;
+  }
+  S.contact.verified = ch === 'email';
+  await API.saveContactChannel(ch, ch === 'email' ? S.auth.email : S.contact.linkedinDm);
+  save(); go('connect');
+},
+
+'wa-start': async function () {
+  const cc = document.getElementById('cc').value;
+  const num = val('phone').replace(/\s/g, '');
+  if (num.length < 8) return err('wa-err', 'That number looks short.');
+  S.contact.phone = cc + ' ' + num; save();
+  busy('wa-start', true, 'Sending…');
+  const r = await API.sendWhatsAppCode(S.contact.phone);
+  if (!r.ok) { busy('wa-start', false, 'Send the code'); return err('wa-err', 'We could not send that.'); }
+  go('wacode');
+},
+
+'wa-resend': async function () { await API.sendWhatsAppCode(S.contact.phone); err('otp-err', 'Sent again.'); },
+
+'wa-verify': async function () {
+  const code = otpValue('waotp');
+  if (code.length < 6) return err('otp-err', 'Enter all six digits.');
+  busy('wa-verify', true, 'Checking…');
+  const r = await API.verifyWhatsAppCode(S.contact.phone, code);
+  if (!r.ok) { busy('wa-verify', false, 'Verify'); return err('otp-err', 'That code did not work.'); }
+  S.contact.verified = true; save();
+  await API.saveContactChannel('whatsapp', S.contact.phone);
+  go('connect');
+},
+
+consent: function (t) {
+  const k = t.dataset.key;
+  S.consent[k] = !S.consent[k];
+  const u = document.getElementById('liurl');
+  if (u) S.linkedinUrl = u.value.trim();
+  save(); render();
+},
+
+'li-fetch': async function () {
+  const u = val('liurl');
+  if (!okLinkedIn(u)) return err('li-err', 'Paste your LinkedIn profile URL.');
+  S.linkedinUrl = u; save();
+  go('reading');
+  const stages = ['Fetching the page…', 'Following the links on it…', 'Reading the work behind them…'];
+  let n = 0;
+  const timer = setInterval(function () {
+    n++; const el = document.getElementById('readstat');
+    if (el && stages[n]) el.textContent = stages[n];
+  }, 850);
+  const r = await API.fetchLinkedIn(u);
+  clearInterval(timer);
+  S.found = r; S.removed = []; save();
+  go(r.skipped ? 'builder' : 'found');
+},
+
+remove: function (t) { S.removed.push(t.dataset.id); save(); render(); },
+undo: function () { S.removed = []; save(); render(); },
+'found-next': function () { go('builder'); },
+
+kind: function (t) {
+  const u = document.getElementById('burl');
+  if (u) S.builder.url = u.value.trim();
+  S.builder.kind = t.dataset.id; save(); render();
+},
+
+'builder-next': function () {
+  const u = val('burl');
+  S.builder.url = u;
+  if (!S.builder.kind) return err('b-err', 'Tell us what kind of work this is.');
+  if (S.builder.kind === 'other') S.builder.other = val('bother');
+  err('b-err', ''); save(); go('terms');
+},
+
+pick: function (t) { S.terms[t.dataset.key] = t.dataset.id; save(); render(); },
+ind: function (t) {
+  const n = t.dataset.n, list = S.terms.industries, at = list.indexOf(n);
+  if (at > -1) list.splice(at, 1); else list.push(n);
+  save(); render();
+},
+floor: function (t) {
+  S.terms.floor = Math.max(10, S.terms.floor + Number(t.dataset.d));
+  save(); render();
+},
+floorset: function (t) { S.terms.floor = Number(t.dataset.v); save(); render(); },
+'terms-submit': async function () {
+  const c = val('city');
+  if (c) S.terms.city = c;
+  const missing = QUESTIONS.filter(function (q) {
+    if (q.type === 'money') return false;
+    if (q.type === 'city') return !S.terms.city;
+    return !S.terms[q.key];
+  });
+  if (missing.length) {
+    const first = document.getElementById('row-' + missing[0].key);
+    if (first) { first.classList.add('missing'); first.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    return err('t-err', missing.length + ' left: ' + missing.map(function (q) { return q.short.toLowerCase(); }).join(', ') + '.');
+  }
+  if (S.terms.industry === 'some' && !S.terms.industries.length) return err('t-err', 'Pick at least one industry.');
+  err('t-err', '');
+  busy('terms-submit', true, 'Sending…');
+  await API.saveProfile(S);
+  go('radar');
+},
+
+intent: function (t) {
+  S.intent = t.dataset.id; save(); render();
+  API.saveIntent(S.intent);
+},
+
+'vouch-send': async function () {
+  const li = val('vli'), em = val('vem');
+  if (!okLinkedIn(li)) return err('v-err', 'Their LinkedIn is required.');
+  if (!okEmail(em)) return err('v-err', 'Their email is required.');
+  err('v-err', '');
+  busy('vouch-send', true, 'Sending…');
+  const r = await API.submitVouch({ linkedin: li, email: em, why: val('vwhy') });
+  if (!r.ok) { busy('vouch-send', false, 'Send the vouch'); return err('v-err', 'That did not go through.'); }
+  S.vouches.push({ linkedin: li, email: em, id: r.id });
+  save(); go('radar');
+},
+
+wipe: function () { if (confirm('Delete everything we hold and start over?')) reset(); }
+
+};
+
+async function oauth(provider) {
+  busy('oauth-' + provider, true, 'Opening…');
+  const r = await API.startOAuth(provider);
+  if (r && r.ok === false) {
+    busy('oauth-' + provider, false, 'Continue with ' + cap(provider));
+    return err('email-err', 'That sign-in is not switched on yet. Use your email below.');
+  }
+  if (r && r.email) { S.auth = { email: r.email, provider: provider, verified: true }; save(); go('reach'); }
+}
+
+/* ---------------------------- routing ----------------------------
+   Deployed at https://headhuntdev.com/candidate the app uses real
+   paths (/candidate/login, /candidate/terms …). Anywhere else it
+   falls back to hash routing so it still works from a file or a
+   preview URL. Point every /candidate/* path at index.html — see
+   vercel.json / nginx.conf in the deploy bundle.
+   ---------------------------------------------------------------- */
+
+const BASE = '/candidate';
+const ROUTES = {
+  curtain: '', hero: 'welcome', identity: 'login', emailcode: 'verify',
+  reach: 'reach', wanumber: 'whatsapp', wacode: 'whatsapp/verify',
+  connect: 'linkedin', reading: 'linkedin/reading', found: 'review',
+  builder: 'work', terms: 'terms', radar: 'radar', vouch: 'vouch'
+};
+const SCREEN_OF = Object.keys(ROUTES).reduce(function (m, k) { m[ROUTES[k]] = k; return m; }, {});
+const pathMode = location.pathname.indexOf(BASE) === 0;
+
+function urlFor(screen) {
+  const slug = ROUTES[screen] || '';
+  return pathMode ? (BASE + (slug ? '/' + slug : '')) : (location.pathname + (slug ? '#' + slug : '#'));
+}
+
+function screenFromUrl() {
+  let slug;
+  if (pathMode) slug = location.pathname.slice(BASE.length).replace(/^\/|\/$/g, '');
+  else slug = location.hash.replace(/^#/, '');
+  return SCREEN_OF[slug] || null;
+}
+
+const _go = go;
+go = function (screen) {
+  _go(screen);
+  const u = urlFor(screen);
+  if (u !== location.pathname + location.hash) history.pushState({ screen: screen }, '', u);
+};
+
+window.addEventListener('popstate', function () {
+  const s = screenFromUrl();
+  if (s) { S.screen = s; save(); render(); }
+});
+window.addEventListener('hashchange', function () {
+  const s = screenFromUrl();
+  if (s && s !== S.screen) { S.screen = s; save(); render(); }
+});
+
+const fromUrl = screenFromUrl();
+if (fromUrl) S.screen = fromUrl;
+render();
+history.replaceState({ screen: S.screen }, '', urlFor(S.screen));
+
+
+function cfg(k){ return typeof CONFIG !== 'undefined' && CONFIG[k]; }
+function hasOAuth(){ return cfg('GOOGLE_SIGNIN') || cfg('APPLE_SIGNIN'); }
+
+(async function(){
+  if(!sb) return;
+  const { data } = await sb.auth.getSession();
+  if(data && data.session && data.session.user && !S.auth.verified){
+    S.auth={email:data.session.user.email,provider:'oauth',verified:true};
+    save();
+    if(S.screen==='curtain'||S.screen==='identity') go('reach');
+  }
+})();
+
+function fit(){
+  const vp=document.getElementById('viewport');
+  const s=Math.min((vp.clientWidth-40)/1280,(vp.clientHeight-70)/900);
+  const el=document.getElementById('screen');
+  el.style.transform='scale('+s+')';
+  const w=document.getElementById('where'); if(w) w.textContent=S.screen;
+}
+window.addEventListener('resize',fit);
+const _go2=go; go=function(x){_go2(x);fit();};
+fit();
+</script>
+</body>
+</html>
+
+</body></html>
