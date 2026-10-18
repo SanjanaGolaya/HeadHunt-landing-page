@@ -24,7 +24,7 @@ a{color:var(--accent);text-decoration:none;font-size:14px}
 a:hover{color:var(--accent2)}
 
 .bar{display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:0 var(--gut);background:var(--ink);color:#fff;flex-shrink:0}
-.bar .dim{color:#9ca5aa}
+.bar .dim{color:#fff}
 .brand{display:flex;align-items:baseline;gap:13px}
 .wordmark{font-size:21px;font-weight:700;line-height:1;letter-spacing:.1em;text-transform:uppercase}
 .rule{width:1px;height:16px;background:rgba(255,255,255,.35)}
@@ -306,7 +306,11 @@ const API = {
 
   async verifyEmailCode(email, code) {
     if (!sb) return { ok: /^\d{6}$/.test(code), demo: true };
-    const { data, error } = await sb.auth.verifyOtp({ email: email, token: code, type: 'email' });
+    let { data, error } = await sb.auth.verifyOtp({ email: email, token: code, type: 'email' });
+    if (error) {
+      const retry = await sb.auth.verifyOtp({ email: email, token: code, type: 'signup' });
+      data = retry.data; error = retry.error;
+    }
     if (error) return { ok: false, reason: error.message };
     await upsert({ email: email, full_name: S.fullName, referred_by: S.referrer });
     return { ok: true, email: email, userId: data.user ? data.user.id : null };
@@ -559,7 +563,6 @@ identity: function () {
   return '<div class="page">' + topbar('Vouched by ' + esc(S.referrer)) + stepper(0) +
     '<div class="body narrow">' +
       '<h2>Where should we reach you?</h2>' +
-      '<p class="lede">One address, verified once. It is how every introduction starts.</p>' +
       (hasOAuth() ? '<div class="oauthrow">' +
         (cfg('GOOGLE_SIGNIN') ? '<button class="oauth" data-act="oauth-google">' + gLogo() + '<span>Continue with Google</span></button>' : '') +
         (cfg('APPLE_SIGNIN') ? '<button class="oauth" data-act="oauth-apple">' + aLogo() + '<span>Continue with Apple</span></button>' : '') +
@@ -567,8 +570,8 @@ identity: function () {
       '<div class="or"><span class="line"></span><span class="mono tiny dim">or</span><span class="line"></span></div>' : '') +
       '<label class="lbl">Your name</label>' +
       '<input class="field" id="fullname" autocomplete="name" placeholder="First and last name" value="' + esc(S.fullName) + '">' +
-      '<label class="lbl mt">Work email</label>' +
-      '<input class="field" id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@company.com" value="' + esc(v) + '">' +
+      '<label class="lbl mt">Personal email</label>' +
+      '<input class="field" id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@gmail.com" value="' + esc(v) + '">' +
       '<p class="err" id="email-err"></p>' +
     '</div>' +
     footer('', { label: 'Send me a code', act: 'email-start' }, { hint: 'No password' }) +
