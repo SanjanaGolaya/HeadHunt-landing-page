@@ -376,6 +376,23 @@ const API = {
     return row || { state: 'unknown' };
   },
 
+  async canUseInvite(code, email) {
+    if (!sb) return { ok: true };
+    const { data, error } = await sb.rpc('invite_can_use', { p_code: code, p_email: email });
+    if (error) return { ok: true };
+    const row = Array.isArray(data) ? data[0] : data;
+    return row || { ok: true };
+  },
+
+  async requestInvite(r) {
+    if (!sb) { await wait(500); return { ok: true }; }
+    const { error } = await sb.rpc('request_invite', {
+      p_name: r.name, p_email: r.email, p_linkedin: r.linkedin, p_note: r.note
+    });
+    if (error) return { ok: false, reason: error.message };
+    return { ok: true };
+  },
+
   async openInvite(code) {
     if (!sb || !code) return;
     try { await sb.rpc('invite_open', { p_code: code }); } catch (e) { /* best effort */ }
@@ -418,6 +435,8 @@ const BLANK = {
   referrer: 'Sanjana',
   inviteCode: '',
   inviteState: '',
+  mode: 'request',
+  request: { name: '', email: '', linkedin: '', note: '' },
   expiresAt: '',
   fullName: '',
   auth: { email: '', provider: '', verified: false },
@@ -577,15 +596,16 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function 
 const VIEWS = {
 
 curtain: function () {
-  return '<div class="curtainwrap" data-act="lift">' +
+  const invited = S.mode === 'invited';
+  return '<div class="curtainwrap" data-act="' + (invited ? 'lift' : 'go-request') + '">' +
     '<div class="page hero">' + heroInner() + '</div>' +
     '<div class="curtain" id="curtain">' +
-      topbar(inviteLabel()) +
+      topbar(invited ? inviteLabel() : 'Invite only') +
       '<div class="curtainbody">' +
         '<p class="knock">You\'re not actively applying, and we\'d never find you on a job board. But if the <b>right founder</b>, at the <b>right time</b>, building the <b>right thing</b> came knocking, you\'d listen.</p>' +
         '<p class="knock bold">This is that knock.</p>' +
       '</div>' +
-      '<div class="curtainfoot"><span class="mono tiny">Click anywhere to open</span>' +
+      '<div class="curtainfoot"><span class="mono tiny">' + (invited ? 'Click anywhere to open' : 'Request an invite') + '</span>' +
         '<svg width="26" height="16" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="13" x2="12" y2="1"/><polyline points="5 8 12 1 19 8"/></svg>' +
       '</div>' +
     '</div>' +
@@ -600,12 +620,42 @@ checking: function () {
   '</div>';
 },
 
-gate: function () {
+request: function () {
+  const r = S.request;
   return '<div class="page">' + topbar('Invite only') +
     '<div class="body narrow">' +
-      '<h2 class="big">Invite only.</h2>' +
-      '<p class="lede big">HeadHunt is closed. Someone already inside has to vouch for you by name.</p>' +
-      '<p class="fine">If someone sent you a link, open that link. This page is not it.</p>' +
+      '<h2>Ask for an invitation.</h2>' +
+      '<p class="lede">HeadHunt is closed. Tell us who you are and what you have built, and we will come back to you.</p>' +
+      '<label class="lbl">Your name</label>' +
+      '<input class="field" id="rqname" autocomplete="name" placeholder="First and last name" value="' + esc(r.name) + '">' +
+      '<label class="lbl mt">Personal email</label>' +
+      '<input class="field" id="rqemail" type="email" inputmode="email" autocomplete="email" placeholder="you@gmail.com" value="' + esc(r.email) + '">' +
+      '<label class="lbl mt">LinkedIn</label>' +
+      '<input class="field" id="rqli" placeholder="linkedin.com/in/\u2026" value="' + esc(r.linkedin) + '">' +
+      '<label class="lbl mt">One thing you have built</label>' +
+      '<input class="field" id="rqnote" placeholder="A repo, a product that is live, a paper" value="' + esc(r.note) + '">' +
+      '<p class="err" id="rq-err"></p>' +
+    '</div>' +
+    footer('', { label: 'Send it', act: 'request-send' }, { hint: 'Name and email are the minimum' }) +
+  '</div>';
+},
+
+requested: function () {
+  return '<div class="page">' + topbar('Invite only') +
+    '<div class="body narrow">' +
+      '<h2 class="big">We have it.</h2>' +
+      '<p class="lede big">If it is a fit you will hear from us with an invitation. We read every one of these ourselves.</p>' +
+    '</div>' +
+  '</div>';
+},
+
+used: function () {
+  const who = S.referrer ? esc(S.referrer) : 'whoever vouched for you';
+  return '<div class="page">' + topbar('Invitation \u00b7 already used') +
+    '<div class="body narrow">' +
+      '<h2 class="big">This invitation has been used.</h2>' +
+      '<p class="lede big">It was good for one person. If it was meant for you, ask ' + who + ' to send another.</p>' +
+      '<p class="fine">Already signed up? Open the link you used the first time, or <a href="#" data-act="go-request">ask us directly</a>.</p>' +
     '</div>' +
   '</div>';
 },
@@ -1035,6 +1085,21 @@ begin: function () { go('identity'); },
 'go-radar': function () { go('radar'); },
 'go-vouch': function () { go('vouch'); },
 
+'go-request': function () { S.screen = 'request'; save(); render(); window.scrollTo(0, 0); },
+
+'request-send': async function () {
+  const name = val('rqname').trim(), email = val('rqemail').trim();
+  if (name.length < 2) return err('rq-err', 'Please tell us your name.');
+  if (!okEmail(email)) return err('rq-err', 'That does not look like an email address.');
+  err('rq-err', '');
+  busy('request-send', true, 'Sending\u2026');
+  S.request = { name: name, email: email, linkedin: val('rqli').trim(), note: val('rqnote').trim() };
+  save();
+  const r = await API.requestInvite(S.request);
+  if (!r.ok) { busy('request-send', false, 'Send it'); return err('rq-err', 'That did not go through. Try again.'); }
+  S.screen = 'requested'; save(); render(); window.scrollTo(0, 0);
+},
+
 'copy-invite': function (el) {
   const done = function () { el.textContent = 'Copied'; setTimeout(function () { el.textContent = 'Copy invite link'; }, 1600); };
   try {
@@ -1052,6 +1117,15 @@ begin: function () { go('identity'); },
   if (!okEmail(email)) return err('email-err', 'That does not look like an email address.');
   S.fullName = name;
   err('email-err', '');
+  if (S.inviteCode) {
+    const chk = await API.canUseInvite(S.inviteCode, email);
+    if (chk && chk.ok === false) {
+      if (chk.reason === 'wrong-email') return err('email-err', 'That invitation was sent to a different address. Use that one, or ask for your own invite.');
+      if (chk.reason === 'used')        return err('email-err', 'That invitation has already been used.');
+      if (chk.reason === 'expired')     return err('email-err', 'That invitation has expired.');
+      return err('email-err', 'That invitation is not valid.');
+    }
+  }
   busy('email-start', true, 'Sending…');
   S.auth.email = email; S.auth.provider = 'email'; save();
   const r = await API.sendEmailCode(email);
@@ -1278,30 +1352,35 @@ function hasOAuth(){ return cfg('GOOGLE_SIGNIN') || cfg('APPLE_SIGNIN'); }
   if (code) {
     show('checking');
     const r = await API.lookupInvite(code);
-    if (r.state === 'ok' || r.state === 'joined') {
+    if (r.state === 'ok') {
       S.inviteCode = code;
-      S.inviteState = r.state;
+      S.inviteState = 'ok';
+      S.mode = 'invited';
       S.referrer = r.referrer_name || S.referrer;
       S.expiresAt = r.expires_at || '';
       save();
       API.openInvite(code);
       show('curtain');
-    } else if (r.state === 'expired') {
-      S.inviteState = 'expired';
+    } else if (r.state === 'expired' || r.state === 'used') {
+      S.inviteState = r.state;
+      S.mode = 'request';
       S.referrer = r.referrer_name || S.referrer;
       S.expiresAt = r.expires_at || '';
       save();
-      show('expired');
+      show(r.state === 'used' ? 'used' : 'expired');
     } else if (r.state === 'error') {
+      // a database hiccup should not turn away someone holding a real invite
+      S.inviteCode = code; S.mode = 'invited'; save();
       show('curtain');
     } else {
-      show('gate');
+      S.mode = 'request'; save();
+      show('curtain');
     }
     return;
   }
 
-  // no code in the link: only people already in the flow get through
-  if (!S.inviteCode && !S.auth.verified) show('gate');
+  // arrived with no link: they can ask, not enter
+  if (!S.inviteCode && !S.auth.verified) { S.mode = 'request'; save(); show('curtain'); }
 })();
 
 (async function(){
