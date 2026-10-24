@@ -342,6 +342,7 @@ const API = {
       work_url: state.builder.url,
       work_kind: state.builder.kind,
       work_kind_other: state.builder.other,
+      paxel_url: state.builder.paxel,
       city: t.city,
       cash_floor: t.floor,
       cash_to_equity: t.swap,
@@ -445,7 +446,7 @@ const BLANK = {
   linkedinUrl: '',
   found: null,
   removed: [],
-  builder: { url: '', kind: '', other: '', repoIsBest: '' },
+  builder: { url: '', kind: '', other: '', repoIsBest: '', paxel: '' },
   terms: { i: 0, city: '', floor: 48, swap: '', team: '', days: '', start: '', reloc: '', industry: '', industries: [], trial: '' },
   intent: 'open',
   vouches: []
@@ -831,9 +832,8 @@ builder: function () {
       '<div class="panel mt">' +
         '<div class="rowsplit"><p class="fname">Paxel profile <span class="mono tiny dim">Optional</span></p>' +
         '<a href="https://paxel.ycombinator.com/" target="_blank" rel="noopener noreferrer">What Paxel is ↗</a></div>' +
-        '<p class="fine">Y Combinator\'s profile for engineers. If you keep one, export it and drop it here. It gives us your work in your own words.</p>' +
-        '<label class="upload"><input type="file" id="paxel" hidden><span>Upload export</span></label>' +
-        '<span class="mono tiny dim" id="paxelname"></span>' +
+        '<p class="fine">Y Combinator\'s profile for engineers. If you have taken it, paste the link to your results. It gives us your work in your own words.</p>' +
+        '<input class="field wide" id="paxel" inputmode="url" placeholder="https://paxel.ycombinator.com/results/\u2026" value="' + esc(b.paxel) + '">' +
       '</div>' +
       '<p class="err" id="b-err"></p>' +
     '</div>' +
@@ -1003,6 +1003,9 @@ function busy(btnAct, on, label) {
 function okEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s); }
 function okLinkedIn(s) { return /linkedin\.com\/(in|pub)\//i.test(s) || /^[\w-]{3,}$/.test(s); }
 
+// Only a Paxel results link. Anything else is not what we asked for.
+function okPaxel(s) { return /^https:\/\/(www\.)?paxel\.ycombinator\.com\/results\/[A-Za-z0-9_-]{3,64}\/?$/.test(String(s || '').trim()); }
+
 function otpValue(wrapId) {
   const w = document.getElementById(wrapId);
   if (!w) return '';
@@ -1055,12 +1058,6 @@ function wire() {
     });
     city.addEventListener('blur', function () { setTimeout(function () { menu.classList.remove('show'); }, 120); });
   }
-
-  const paxel = document.getElementById('paxel');
-  if (paxel) paxel.addEventListener('change', function () {
-    const n = document.getElementById('paxelname');
-    if (n && paxel.files[0]) n.textContent = paxel.files[0].name;
-  });
 }
 
 document.addEventListener('click', function (e) {
@@ -1227,6 +1224,9 @@ kind: function (t) {
   S.builder.url = u;
   if (!S.builder.kind) return err('b-err', 'Tell us what kind of work this is.');
   if (S.builder.kind === 'other') S.builder.other = val('bother');
+  const px = val('paxel').trim();
+  if (px && !okPaxel(px)) return err('b-err', 'That is not a Paxel results link. It looks like paxel.ycombinator.com/results/\u2026');
+  S.builder.paxel = px;
   err('b-err', ''); save(); go('terms');
 },
 
