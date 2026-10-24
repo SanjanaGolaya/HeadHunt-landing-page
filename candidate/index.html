@@ -732,7 +732,7 @@ reach: function () {
 wanumber: function () {
   return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(0) +
     '<div class="body narrow">' +
-      (cfg('WHATSAPP') ? '<p class="eyebrow">WhatsApp · step 1 of 2</p>' : '<p class="eyebrow">WhatsApp</p>') +
+      (cfg('WHATSAPP') ? '<p class="eyebrow">WhatsApp · step 1 of 2</p>' : '') +
       '<h2>Your WhatsApp number</h2>' +
       '<div class="phonerow">' +
         '<select class="field short" id="cc"><option>+91</option><option>+1</option><option>+44</option><option>+65</option><option>+971</option></select>' +
