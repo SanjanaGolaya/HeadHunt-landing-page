@@ -1120,7 +1120,6 @@ begin: function () { go('identity'); },
   if (S.inviteCode) {
     const chk = await API.canUseInvite(S.inviteCode, email);
     if (chk && chk.ok === false) {
-      if (chk.reason === 'wrong-email') return err('email-err', 'That invitation was sent to a different address. Use that one, or ask for your own invite.');
       if (chk.reason === 'used')        return err('email-err', 'That invitation has already been used.');
       if (chk.reason === 'expired')     return err('email-err', 'That invitation has expired.');
       return err('email-err', 'That invitation is not valid.');
@@ -1367,7 +1366,9 @@ function hasOAuth(){ return cfg('GOOGLE_SIGNIN') || cfg('APPLE_SIGNIN'); }
       S.referrer = r.referrer_name || S.referrer;
       S.expiresAt = r.expires_at || '';
       save();
-      show(r.state === 'used' ? 'used' : 'expired');
+      // a batch link that ran out of seats sends them to ask, not to a dead end
+      if (r.state === 'used' && r.kind === 'seed') show('curtain');
+      else show(r.state === 'used' ? 'used' : 'expired');
     } else if (r.state === 'error') {
       // a database hiccup should not turn away someone holding a real invite
       S.inviteCode = code; S.mode = 'invited'; save();
