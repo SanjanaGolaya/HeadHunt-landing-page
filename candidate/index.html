@@ -352,8 +352,10 @@ const API = {
       office_days: t.days,
       earliest_start: t.start,
       relocation: t.reloc,
-      industries_excluded: t.industry === 'some' ? t.industries : [],
+      preferred_cities: (t.reloc && t.reloc !== 'no') ? t.relocCities : [],
+      industries_preferred: t.industry === 'some' ? t.industries : [],
       trial_appetite: t.trial,
+      looking_note: t.note,
       intent: state.intent
     });
   },
@@ -449,7 +451,7 @@ const BLANK = {
   found: null,
   removed: [],
   builder: { url: '', kind: '', other: '', repoIsBest: '', paxel: '' },
-  terms: { i: 0, city: '', floor: 48, swap: '', team: '', days: '', start: '', reloc: '', industry: '', industries: [], trial: '' },
+  terms: { i: 0, city: '', floor: 48, swap: '', team: '', days: '', start: '', reloc: '', relocCities: [], industry: '', industries: [], trial: '', note: '' },
   intent: 'open',
   vouches: []
 };
@@ -534,18 +536,18 @@ const INDUSTRIES = [
 const QUESTIONS = [
   { key: 'city', short: 'Based in', title: 'Where are you based?', help: 'The city we match you against. Remote roles ignore it.', type: 'city' },
   { key: 'floor', short: 'Cash floor', title: 'The number below which it is a no.', help: 'Fixed cash, not total comp. We never show it to a founder, we just refuse to waste your time under it.', type: 'money' },
-  { key: 'swap', short: 'Cash to equity', title: 'Would you swap cash for equity?', help: 'Some founders will trade a lower fixed number for a bigger grant on a one-year cliff. How much of your floor would you move?', type: 'pick',
-    options: [['0', 'None'], ['10', 'Up to 10%'], ['20', 'Up to 20%'], ['30', '30% or more']] },
+  { key: 'swap', short: 'Cash to equity', title: 'Would you swap cash for equity?', help: 'There is no wrong answer, just tell us where your head is at.', type: 'pick',
+    options: [['buyin', "I'd prefer a buy in"], ['open', "I'm open"], ['cash', "I'm focused on cash right now"]] },
   { key: 'team', short: 'Team size', title: 'How big is the engineering team you want to join?', help: 'Where you would be landing on day one.', type: 'pick',
     options: [['0', 'Zero, I want to be the first'], ['1-5', '1 to 5'], ['5-15', '5 to 15'], ['15+', '15+']] },
   { key: 'days', short: 'Office days', title: 'How many days in an office?', help: 'Six-day weeks exist in this market. Say no now rather than at the offer.', type: 'pick',
-    options: [['0', 'Fully remote'], ['5', '5 days'], ['6', '6 days is okay']] },
+    options: [['0', 'Fully remote'], ['5', '5 days'], ['6', "I'm okay with 996 culture"]] },
   { key: 'start', short: 'Earliest start', title: 'How soon could you start?', help: 'Notice periods are the single biggest reason good matches die.', type: 'pick',
     options: [['now', 'Immediately'], ['30d', '30 days'], ['60d', '60 days'], ['90d', '90 days'], ['buyout', 'Only with a buyout']] },
-  { key: 'reloc', short: 'Relocation', title: 'Would you move cities?', help: 'Half our roles are Bengaluru, the rest are split across other major cities.', type: 'pick',
+  { key: 'reloc', short: 'Relocation', title: 'Would you move cities?', help: 'Half our roles are Bengaluru, the rest are split across other major cities. If you would move, tell us where.', type: 'pick',
     options: [['no', 'No'], ['right', 'For the right one'], ['yes', 'Yes']] },
-  { key: 'industry', short: 'Industry', title: 'Any industry you will not work in?', help: 'Most people are agnostic. If you are not, pick them from the list.', type: 'pick',
-    options: [['any', 'Industry agnostic'], ['some', 'There are some']] },
+  { key: 'industry', short: 'Industry', title: 'Any industries you prefer?', help: 'Most people are agnostic. If you are drawn to specific ones, pick them from the list.', type: 'pick',
+    options: [['any', 'Industry agnostic'], ['some', 'I have preferences']] },
   { key: 'trial', short: 'Working trials', title: 'How far will you go before an offer?', help: 'Work trials, take-home assessments and co-work months are common in this market. Tell us now what you will sit through.', type: 'pick',
     options: [['none', 'Not interested'], ['take', 'Take-home only'], ['paid', 'Paid trial, 3 to 5 days'], ['week', 'A full week'], ['month', 'A co-work month']] }
 ];
@@ -872,6 +874,11 @@ terms: function () {
         return '<button class="chip xs ' + (t.industries.indexOf(n) > -1 ? 'on' : '') + '" data-act="ind" data-n="' + n + '">' + n + '</button>';
       }).join('') + '</div>';
     }
+    if (q.key === 'reloc' && t.reloc && t.reloc !== 'no') {
+      c += '<div class="chips tight">' + CITIES.map(function (n) {
+        return '<button class="chip xs ' + (t.relocCities.indexOf(n) > -1 ? 'on' : '') + '" data-act="relocn" data-n="' + n + '">' + n + '</button>';
+      }).join('') + '</div>';
+    }
     return row(q, c);
   }).join('');
 
@@ -883,6 +890,11 @@ terms: function () {
         '<span class="mono tiny dim">Private · never shown to founders</span>' +
       '</div>' +
       '<div class="qlist">' + rows + '</div>' +
+      '<div class="panel mt">' +
+        '<p class="fname">What are you actually looking for? <span class="mono tiny dim">Optional</span></p>' +
+        '<p class="fine">In your own words, what and why. The more specific, the better we can go find it.</p>' +
+        '<textarea class="field area" id="tnote" rows="4" placeholder="What you want next, and why.">' + esc(t.note) + '</textarea>' +
+      '</div>' +
       '<p class="err" id="t-err"></p>' +
     '</div>' +
     footer('<span class="fine">Change any of these later. We check them again before any introduction.</span>',
@@ -961,7 +973,7 @@ function heroInner() {
     '<div class="herobody"><h1>' + esc(S.referrer) + '<br><span class="grey">vouched for you.</span></h1>' +
     '<p class="mono tiny dim">Elite talent. <span class="accenttext">Privately accessed.</span></p></div>' +
     '<div class="stats">' +
-      stat('Top 1%', "Of India's tech talent") + stat('₹60LPA+', 'Avg. total comp') +
+      stat('Top 1%', "Of India's tech talent") + stat('₹70LPA+', 'Avg. total comp') +
       stat('Stealth', 'Always. No public profile') + stat('72 hrs', 'Avg. time to first introduction') +
     '</div>' +
     '<div class="herofoot"><p class="mono tiny dim quote">Nothing changes the world faster than the right person working on the right problem.</p>' +
@@ -1126,6 +1138,8 @@ begin: function () { go('identity'); },
       return err('email-err', 'That invitation is not valid.');
     }
   }
+  // Already verified this exact address: no reason to send another code.
+  if (S.auth.verified && S.auth.email === email) { save(); return go('reach'); }
   busy('email-start', true, 'Sending…');
   S.auth.email = email; S.auth.provider = 'email'; save();
   const r = await API.sendEmailCode(email);
@@ -1238,6 +1252,11 @@ ind: function (t) {
   if (at > -1) list.splice(at, 1); else list.push(n);
   save(); render();
 },
+relocn: function (t) {
+  const n = t.dataset.n, list = S.terms.relocCities, at = list.indexOf(n);
+  if (at > -1) list.splice(at, 1); else list.push(n);
+  save(); render();
+},
 floor: function (t) {
   S.terms.floor = Math.max(10, S.terms.floor + Number(t.dataset.d));
   save(); render();
@@ -1257,6 +1276,8 @@ floorset: function (t) { S.terms.floor = Number(t.dataset.v); save(); render(); 
     return err('t-err', missing.length + ' left: ' + missing.map(function (q) { return q.short.toLowerCase(); }).join(', ') + '.');
   }
   if (S.terms.industry === 'some' && !S.terms.industries.length) return err('t-err', 'Pick at least one industry.');
+  if (S.terms.reloc && S.terms.reloc !== 'no' && !S.terms.relocCities.length) return err('t-err', 'Pick at least one city you would move to.');
+  S.terms.note = val('tnote');
   err('t-err', '');
   busy('terms-submit', true, 'Sending…');
   await API.saveProfile(S);
