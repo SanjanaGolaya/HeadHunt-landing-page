@@ -457,6 +457,7 @@ const BLANK = {
 };
 
 let S = load();
+let lastSavedIntent = null;
 
 // read before any history rewrite strips the query string
 const ENTRY_CODE = (function () {
@@ -630,15 +631,15 @@ request: function () {
   return '<div class="page">' + topbar('Invite only') +
     '<div class="body narrow">' +
       '<h2>Ask for an invitation.</h2>' +
-      '<p class="lede">HeadHunt is closed. Tell us who you are and what you have built, and we will come back to you.</p>' +
+      '<p class="lede">HeadHunt is closed. Tell us who you are and make the case, and we will come back to you.</p>' +
       '<label class="lbl">Your name</label>' +
       '<input class="field" id="rqname" autocomplete="name" placeholder="First and last name" value="' + esc(r.name) + '">' +
       '<label class="lbl mt">Personal email</label>' +
       '<input class="field" id="rqemail" type="email" inputmode="email" autocomplete="email" placeholder="you@gmail.com" value="' + esc(r.email) + '">' +
       '<label class="lbl mt">LinkedIn</label>' +
       '<input class="field" id="rqli" placeholder="linkedin.com/in/\u2026" value="' + esc(r.linkedin) + '">' +
-      '<label class="lbl mt">One thing you have built</label>' +
-      '<input class="field" id="rqnote" placeholder="A repo, a product that is live, a paper" value="' + esc(r.note) + '">' +
+      '<label class="lbl mt">Give us one reason to save you one of 200 seats</label>' +
+      '<input class="field" id="rqnote" placeholder="Make your case in a line or two." value="' + esc(r.note) + '">' +
       '<p class="err" id="rq-err"></p>' +
     '</div>' +
     footer('', { label: 'Send it', act: 'request-send' }, { hint: 'Name and email are the minimum' }) +
@@ -907,16 +908,17 @@ radar: function () {
     ['open', 'Open to the right thing', 'Only when it is unusually good.'],
     ['paused', 'Not now but keep me on the radar', 'Silence until I come back and change this.']];
   const used = S.vouches.length;
+  if (lastSavedIntent === null) lastSavedIntent = S.intent;
+  const intentChanged = S.intent !== lastSavedIntent;
   return '<div class="page">' + topbar(esc(S.auth.email) + ' · stealth') +
     '<div class="split wide">' +
       '<div class="body">' +
-        '<p class="eyebrow">Signal map · 1 of 5 strands</p>' +
         '<h2 class="big">You\'re on<br>the radar.</h2>' +
         '<p class="lede big">The mandatory bit is done. From here we only write when there is a named company and a real role.</p>' +
         '<div class="panel dark">' +
           '<p class="mono tiny">You now have</p>' +
           '<p class="huge">' + (2 - used) + ' referral' + (2 - used === 1 ? '' : 's') + '</p>' +
-          '<p class="fine light">Two for life, not two a year. If they are hired, 1% of their first-year CTC is yours on the day they sign.</p>' +
+          '<p class="fine light">Just two, ever. Not two a year. If they are hired, 1% of their first-year CTC is yours on the day they sign.</p>' +
           (used < 2 ? '<button class="cta accent" data-act="go-vouch"><span>Vouch for someone</span>' + arrow() + '</button>'
             : '<p class="fine light">Both spent. Thank you.</p>') +
         '</div>' +
@@ -934,6 +936,7 @@ radar: function () {
             return '<div class="card pick tall ' + (S.intent === m[0] ? 'on' : '') + '" data-act="intent" data-id="' + m[0] + '">' +
               '<p class="fname">' + m[1] + '</p><p class="cardhelp">' + m[2] + '</p></div>';
           }).join('') +
+          (intentChanged ? '<button class="cta accent" data-act="intent-save"><span>Save</span></button>' : '') +
         '</div>' +
         '<div class="note"><p class="fname">Not looking at all?</p><p class="fine">Pick the third one and forget we exist. We would rather hold you dormant for two years than lose you because we pushed.</p></div>' +
         '<p class="mono tiny dim">Vouched by ' + esc(S.referrer) + ' · <a href="#" data-act="wipe">delete everything</a></p>' +
@@ -1286,7 +1289,12 @@ floorset: function (t) { S.terms.floor = Number(t.dataset.v); save(); render(); 
 
 intent: function (t) {
   S.intent = t.dataset.id; save(); render();
-  API.saveIntent(S.intent);
+},
+'intent-save': async function () {
+  busy('intent-save', true, 'Saving…');
+  await API.saveIntent(S.intent);
+  lastSavedIntent = S.intent;
+  render();
 },
 
 'vouch-send': async function () {
