@@ -719,13 +719,10 @@ reach: function () {
   return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(0) +
     '<div class="body">' +
       '<h2>How do you want to hear from us?</h2>' +
-      '<p class="lede">Only when there is a named company and a real role.</p>' +
-      '<div class="' + (cfg('WHATSAPP') ? 'grid3' : 'grid2') + '">' +
+      '<div class="grid2">' +
         opt('email', 'Email', esc(S.auth.email), 'Verified already.') +
-        (cfg('WHATSAPP') ? opt('whatsapp', 'WhatsApp', '+91', 'We verify your number in the next step.') : '') +
-        opt('linkedin', 'LinkedIn', 'DMs', 'A DM and a connect request from sanjana-golaya in about 3 days.') +
+        opt('whatsapp', 'WhatsApp', 'Your number', cfg('WHATSAPP') ? 'We verify your number in the next step.' : 'One message when a founder wants to meet you.') +
       '</div>' +
-      (ch === 'linkedin' ? '<div class="sub"><label class="lbl">Your LinkedIn</label><input class="field" id="lidm" placeholder="linkedin.com/in/…" value="' + esc(S.contact.linkedinDm) + '"></div>' : '') +
       '<p class="err" id="reach-err"></p>' +
     '</div>' +
     footer('', { label: 'Continue', act: 'reach-next' }) +
@@ -735,7 +732,7 @@ reach: function () {
 wanumber: function () {
   return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(0) +
     '<div class="body narrow">' +
-      '<p class="eyebrow">WhatsApp · step 1 of 2</p>' +
+      (cfg('WHATSAPP') ? '<p class="eyebrow">WhatsApp · step 1 of 2</p>' : '<p class="eyebrow">WhatsApp</p>') +
       '<h2>What number?</h2>' +
       '<p class="lede">One message when a founder wants to meet you. Nothing else.</p>' +
       '<div class="phonerow">' +
@@ -744,7 +741,7 @@ wanumber: function () {
       '</div>' +
       '<p class="err" id="wa-err"></p>' +
     '</div>' +
-    footer('<a href="#" data-act="go-reach">Pick another channel</a>', { label: 'Send the code', act: 'wa-start' }) +
+    footer('<a href="#" data-act="go-reach">Use email instead</a>', { label: cfg('WHATSAPP') ? 'Send the code' : 'Save my number', act: 'wa-start' }) +
   '</div>';
 },
 
@@ -1157,13 +1154,8 @@ begin: function () { go('identity'); },
   const ch = S.contact.channel;
   if (!ch) return err('reach-err', 'Pick one channel.');
   if (ch === 'whatsapp') return go('wanumber');
-  if (ch === 'linkedin') {
-    const u = val('lidm');
-    if (!okLinkedIn(u)) return err('reach-err', 'Add your LinkedIn so we can reach you there.');
-    S.contact.linkedinDm = u;
-  }
-  S.contact.verified = ch === 'email';
-  await API.saveContactChannel(ch, ch === 'email' ? S.auth.email : S.contact.linkedinDm);
+  S.contact.verified = true;
+  await API.saveContactChannel(ch, S.auth.email);
   save(); go('connect');
 },
 
@@ -1172,6 +1164,11 @@ begin: function () { go('identity'); },
   const num = val('phone').replace(/\s/g, '');
   if (num.length < 8) return err('wa-err', 'That number looks short.');
   S.contact.phone = cc + ' ' + num; save();
+  if (!cfg('WHATSAPP')) {
+    S.contact.verified = false;
+    await API.saveContactChannel('whatsapp', S.contact.phone);
+    save(); return go('connect');
+  }
   busy('wa-start', true, 'Sending…');
   const r = await API.sendWhatsAppCode(S.contact.phone);
   if (!r.ok) { busy('wa-start', false, 'Send the code'); return err('wa-err', 'We could not send that.'); }
