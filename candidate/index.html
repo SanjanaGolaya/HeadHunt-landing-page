@@ -323,8 +323,8 @@ const API = {
   async sendWhatsAppCode(phone) { await wait(600); return { ok: true }; },
   async verifyWhatsAppCode(phone, code) { await wait(500); return { ok: /^\d{6}$/.test(code) }; },
 
-  async saveContactChannel(channel, value) {
-    return upsert({ contact_channel: channel, contact_value: value, contact_verified: true });
+  async saveContactChannel(channel, value, verified) {
+    return upsert({ contact_channel: channel, contact_value: value, contact_verified: verified !== false });
   },
 
   // Until you have a licensed enrichment provider this stores the URL
@@ -1155,7 +1155,7 @@ begin: function () { go('identity'); },
   if (!ch) return err('reach-err', 'Pick one channel.');
   if (ch === 'whatsapp') return go('wanumber');
   S.contact.verified = true;
-  await API.saveContactChannel(ch, S.auth.email);
+  await API.saveContactChannel(ch, S.auth.email, true);
   save(); go('connect');
 },
 
@@ -1166,7 +1166,7 @@ begin: function () { go('identity'); },
   S.contact.phone = cc + ' ' + num; save();
   if (!cfg('WHATSAPP')) {
     S.contact.verified = false;
-    await API.saveContactChannel('whatsapp', S.contact.phone);
+    await API.saveContactChannel('whatsapp', S.contact.phone, false);
     save(); return go('connect');
   }
   busy('wa-start', true, 'Sending…');
