@@ -686,7 +686,7 @@ identity: function () {
       '<input class="field" id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@gmail.com" value="' + esc(v) + '">' +
       '<p class="err" id="email-err"></p>' +
     '</div>' +
-    footer('', { label: 'Send me a code', act: 'email-start' }, { hint: 'No password' }) +
+    footer('', { label: 'Send me a code', act: 'email-start' }) +
   '</div>';
 },
 
@@ -695,7 +695,7 @@ emailcode: function () {
     '<div class="body narrow">' +
       '<p class="eyebrow">Step 2 of 2</p>' +
       '<h2>Check your inbox.</h2>' +
-      '<p class="lede">Six digits are on their way to <strong>' + esc(S.auth.email) + '</strong>.</p>' +
+      '<p class="lede">Your code is on its way to <strong>' + esc(S.auth.email) + '</strong>.</p>' +
       otpBoxes('emailotp') +
       '<div class="row gap">' +
         '<span class="mono tiny dim" id="otp-timer">Expires in 09:58</span>' +
@@ -971,9 +971,15 @@ function heroInner() {
     '<p class="mono tiny dim">Private by design. No public profile, ever.</p></div></div>';
 }
 function stat(a, b) { return '<div class="stat"><p class="statnum">' + a + '</p><p class="mono tiny dim">' + b + '</p></div>'; }
+function otpLength() {
+  const n = parseInt(cfg('OTP_LENGTH'), 10);
+  return (n >= 4 && n <= 10) ? n : 6;
+}
+
 function otpBoxes(id) {
+  const len = otpLength();
   let s = '<div class="otp" id="' + id + '">';
-  for (let i = 0; i < 6; i++) s += '<input class="cell" inputmode="numeric" maxlength="1" data-i="' + i + '">';
+  for (let i = 0; i < len; i++) s += '<input class="cell" inputmode="numeric" maxlength="1" data-i="' + i + '">';
   return s + '</div>';
 }
 function tick() { return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'; }
@@ -1023,11 +1029,11 @@ function wire() {
         if (e.key === 'Backspace' && !c.value && cells[i - 1]) cells[i - 1].focus();
       });
       c.addEventListener('paste', function (e) {
-        const t = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+        const t = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, cells.length);
         if (!t) return;
         e.preventDefault();
         t.split('').forEach(function (d, n) { if (cells[n]) cells[n].value = d; });
-        cells[Math.min(t.length, 5)].focus();
+        cells[Math.min(t.length, cells.length - 1)].focus();
       });
     });
   });
@@ -1136,7 +1142,7 @@ begin: function () { go('identity'); },
 
 'email-verify': async function () {
   const code = otpValue('emailotp');
-  if (code.length < 6) return err('otp-err', 'Enter all six digits.');
+  if (code.length < otpLength()) return err('otp-err', 'Enter the whole code.');
   busy('email-verify', true, 'Checking…');
   const r = await API.verifyEmailCode(S.auth.email, code);
   if (!r.ok) { busy('email-verify', false, 'Verify'); return err('otp-err', 'That code did not work.'); }
