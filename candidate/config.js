@@ -11,6 +11,10 @@ window.HH_CONFIG = {
 
   // Flip to true once each one is set up. Left false, the flow
   // skips that step instead of breaking.
+  // Length of the login code Supabase sends. Must match
+  // Authentication > Email OTP Length in your project.
+  OTP_LENGTH:           8,
+
   GOOGLE_SIGNIN:        false,
   APPLE_SIGNIN:         false,
   WHATSAPP:             false,
