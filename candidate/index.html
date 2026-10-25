@@ -44,6 +44,8 @@ a:hover{color:var(--accent2)}
 .step.on{border-top-color:var(--accent)}
 .step.on .mono{color:var(--accent)}
 .step.on .name{color:var(--ink);font-weight:700}
+.step.clickable{cursor:pointer}
+.step.clickable:hover .name{color:var(--ink)}
 
 .body{padding:clamp(28px,5vw,52px) var(--gut) 26px;flex-grow:1}
 .body.narrow{max-width:760px}
@@ -598,10 +600,12 @@ function topbar(right) {
 }
 
 const STEPS = ['Identity', 'Connect', 'Builder', 'Your terms'];
+const STEP_SCREENS = ['identity', 'connect', 'builder', 'terms'];
 function stepper(active) {
   return '<div class="steps">' + STEPS.map(function (s, i) {
-    const on = i === active, done = i < active;
-    return '<div class="step ' + (on ? 'on' : (done ? 'done' : '')) + '">' +
+    const on = i === active, done = i < active, clickable = i <= active;
+    return '<div class="step ' + (on ? 'on' : (done ? 'done' : '')) + (clickable ? ' clickable' : '') + '"' +
+      (clickable ? ' data-act="step-jump" data-step="' + i + '"' : '') + '>' +
       '<span class="mono tiny">0' + (i + 1) + '</span><span class="name">' + s + '</span></div>';
   }).join('') + '</div>';
 }
@@ -1203,6 +1207,10 @@ lift: function () {
 
 begin: function () { go('identity'); },
 'go-identity': function () { go('identity'); },
+'step-jump': function (t) {
+  const target = STEP_SCREENS[Number(t.dataset.step)];
+  if (target) go(landableScreen(target));
+},
 'go-signin': function () { go('signin'); },
 'go-reach': function () { go('reach'); },
 'go-wanumber': function () { go('wanumber'); },
