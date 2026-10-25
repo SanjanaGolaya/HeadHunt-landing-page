@@ -155,9 +155,6 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .mi{padding:11px 16px;font-size:15px;cursor:pointer}
 .mi:hover{background:var(--ground)}
 .moneyrow{display:flex;align-items:center;gap:12px}
-.money{display:flex;align-items:center;gap:8px;padding:0 20px;min-height:62px;min-width:300px;border:1px solid var(--ink);border-radius:4px;background:#fff;font-size:19px;color:var(--muted)}
-.money strong{font-size:26px;color:var(--ink)}
-.step-{width:48px;height:48px;border:1px solid var(--line2);border-radius:4px;background:#fff;font-size:22px;cursor:pointer;color:var(--ink)}
 
 .hero .herobody{padding:clamp(48px,10vw,132px) var(--gut) 36px;flex-grow:1}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--ground)}
@@ -204,9 +201,6 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:700px}
 .field.slim{max-width:320px;min-height:42px;font-size:15px}
 .moneyrow.slim{gap:8px}
-.moneyrow.slim .step-{width:40px;height:40px;font-size:19px}
-.money.slim{min-width:170px;min-height:42px;padding:0 14px;font-size:15px}
-.money.slim strong{font-size:20px}
 .combo .menu{top:48px;max-width:320px}
 
 
@@ -234,7 +228,6 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
   .cell{width:48px;height:62px;font-size:26px}
   .otp{gap:8px}
   .card{min-height:0}
-  .money.slim{min-width:0;flex:1}
 }
 @media (max-width:640px){
   .bar > span{display:none}
@@ -488,10 +481,22 @@ function inviteLabel() {
   return 'Invitation \u00b7 expires in ' + d + (d === 1 ? ' day' : ' days');
 }
 
+// Nested objects in BLANK (terms, builder, …) need their own merge: a
+// plain Object.assign only merges top-level keys, so a saved `terms` from
+// before a field existed (relocCities, note, …) would wholesale replace
+// the new default and silently drop it, crashing anything that reads it.
 function load() {
   try {
     const raw = localStorage.getItem('hh_candidate_v1');
-    if (raw) return Object.assign(JSON.parse(JSON.stringify(BLANK)), JSON.parse(raw));
+    if (raw) {
+      const blank = JSON.parse(JSON.stringify(BLANK));
+      const saved = JSON.parse(raw);
+      const merged = Object.assign({}, blank, saved);
+      ['auth', 'contact', 'consent', 'request', 'builder', 'terms'].forEach(function (k) {
+        merged[k] = Object.assign({}, blank[k], saved[k] || {});
+      });
+      return merged;
+    }
   } catch (e) { /* private mode, blocked storage */ }
   return JSON.parse(JSON.stringify(BLANK));
 }
@@ -542,7 +547,7 @@ const QUESTIONS = [
   { key: 'team', short: 'Team size', title: 'How big is the engineering team you want to join?', help: 'Where you would be landing on day one.', type: 'pick',
     options: [['0', 'Zero, I want to be the first'], ['1-5', '1 to 5'], ['5-15', '5 to 15'], ['15+', '15+']] },
   { key: 'days', short: 'Office days', title: 'How many days in an office?', help: 'Six-day weeks exist in this market. Say no now rather than at the offer.', type: 'pick',
-    options: [['0', 'Fully remote'], ['5', '5 days'], ['6', "I'm okay with 996 culture"]] },
+    options: [['0', 'Fully remote'], ['hybrid', 'Hybrid'], ['5', '5 days'], ['6', "I'm okay with 996 culture"]] },
   { key: 'start', short: 'Earliest start', title: 'How soon could you start?', help: 'Notice periods are the single biggest reason good matches die.', type: 'pick',
     options: [['now', 'Immediately'], ['30d', '30 days'], ['60d', '60 days'], ['90d', '90 days'], ['buyout', 'Only with a buyout']] },
   { key: 'reloc', short: 'Relocation', title: 'Would you move cities?', help: 'Half our roles are Bengaluru, the rest are split across other major cities. If you would move, tell us where.', type: 'pick',
@@ -829,7 +834,7 @@ builder: function () {
       '<h2>The best thing you\'ve built.</h2>' +
       '<p class="lede">A repo, a product that\'s live, a paper, or a post about something that broke.</p>' +
       '<input class="field wide" id="burl" placeholder="https://" value="' + esc(b.url) + '">' +
-      '<p class="lbl mt">What is it? <span class="accenttext">Required</span></p>' +
+      '<p class="lbl mt">What is it? <span class="accenttext">Required if you skip a link</span></p>' +
       '<div class="chips">' + kinds.map(function (k) {
         return '<button class="chip ' + (b.kind === k[0] ? 'on' : '') + '" data-act="kind" data-id="' + k[0] + '">' + k[1] + '</button>';
       }).join('') + '</div>' +
@@ -865,9 +870,9 @@ terms: function () {
         '<div class="menu" id="citymenu"></div></div>');
     }
     if (q.type === 'money') {
-      return row(q, '<div class="moneyrow slim"><button class="step-" data-act="floor" data-d="-2">−</button>' +
-        '<div class="money slim"><span>₹</span><strong>' + t.floor + '</strong><span>LPA</span></div>' +
-        '<button class="step-" data-act="floor" data-d="2">+</button></div>');
+      return row(q, '<div class="moneyrow slim"><span>₹</span>' +
+        '<input class="field slim" id="floorinput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="' + t.floor + '">' +
+        '<span>LPA</span></div>');
     }
     let c = chips(q);
     if (q.key === 'industry' && t.industry === 'some') {
@@ -1075,6 +1080,15 @@ function wire() {
     });
     city.addEventListener('blur', function () { setTimeout(function () { menu.classList.remove('show'); }, 120); });
   }
+
+  // cash floor: typed, digits only, no up/down steppers
+  const floorInput = document.getElementById('floorinput');
+  if (floorInput) {
+    floorInput.addEventListener('input', function () {
+      const digits = floorInput.value.replace(/\D/g, '');
+      if (digits !== floorInput.value) floorInput.value = digits;
+    });
+  }
 }
 
 document.addEventListener('click', function (e) {
@@ -1215,6 +1229,7 @@ consent: function (t) {
   const u = val('liurl');
   if (!okLinkedIn(u)) return err('li-err', 'Paste your LinkedIn profile URL.');
   S.linkedinUrl = u; save();
+  readingInFlight = true;
   go('reading');
   const stages = ['Fetching the page…', 'Following the links on it…', 'Reading the work behind them…'];
   let n = 0;
@@ -1224,6 +1239,7 @@ consent: function (t) {
   }, 850);
   const r = await API.fetchLinkedIn(u);
   clearInterval(timer);
+  readingInFlight = false;
   S.found = r; S.removed = []; save();
   go(r.skipped ? 'builder' : 'found');
 },
@@ -1241,7 +1257,7 @@ kind: function (t) {
 'builder-next': function () {
   const u = val('burl');
   S.builder.url = u;
-  if (!S.builder.kind) return err('b-err', 'Tell us what kind of work this is.');
+  if (!u && !S.builder.kind) return err('b-err', 'Tell us what kind of work this is.');
   if (S.builder.kind === 'other') S.builder.other = val('bother');
   const px = val('paxel').trim();
   if (px && !okPaxel(px)) return err('b-err', 'That is not a Paxel results link. It looks like paxel.ycombinator.com/results/\u2026');
@@ -1260,14 +1276,11 @@ relocn: function (t) {
   if (at > -1) list.splice(at, 1); else list.push(n);
   save(); render();
 },
-floor: function (t) {
-  S.terms.floor = Math.max(10, S.terms.floor + Number(t.dataset.d));
-  save(); render();
-},
-floorset: function (t) { S.terms.floor = Number(t.dataset.v); save(); render(); },
 'terms-submit': async function () {
   const c = val('city');
   if (c) S.terms.city = c;
+  const fl = parseInt(val('floorinput'), 10);
+  if (!isNaN(fl)) S.terms.floor = Math.max(10, fl);
   const missing = QUESTIONS.filter(function (q) {
     if (q.type === 'money') return false;
     if (q.type === 'city') return !S.terms.city;
@@ -1353,24 +1366,55 @@ function screenFromUrl() {
   return SCREEN_OF[slug] || null;
 }
 
+// "reading" is a ~2s auto-advancing animation, not a real stop: the fetch
+// that drives it only runs once, from the li-fetch click. Landing back on
+// it via browser back/forward (or a reload) leaves it stuck forever with
+// nothing left to finish it, so treat it as not landable outside that
+// one brief window and send people back to the linkedin form instead.
+let readingInFlight = false;
+function landableScreen(s) {
+  return (s === 'reading' && !readingInFlight) ? 'connect' : s;
+}
+
 const _go = go;
 go = function (screen) {
   _go(screen);
   const u = urlFor(screen);
-  if (u !== location.pathname + location.hash) history.pushState({ screen: screen }, '', u);
+  if (u === location.pathname + location.hash) return;
+  // "reading" is a transient loader, not a real stop: replace the current
+  // entry instead of pushing a new one, so back-navigation from whatever
+  // follows it lands one press away, not two.
+  if (screen === 'reading') history.replaceState({ screen: screen }, '', u);
+  else history.pushState({ screen: screen }, '', u);
 };
 
 window.addEventListener('popstate', function () {
-  const s = screenFromUrl();
-  if (s) { S.screen = s; save(); render(); }
+  const raw = screenFromUrl();
+  const s = landableScreen(raw);
+  if (s) {
+    S.screen = s; save(); render();
+    if (s !== raw) history.replaceState({ screen: s }, '', urlFor(s));
+  }
 });
 window.addEventListener('hashchange', function () {
-  const s = screenFromUrl();
-  if (s && s !== S.screen) { S.screen = s; save(); render(); }
+  const raw = screenFromUrl();
+  const s = landableScreen(raw);
+  if (s && s !== S.screen) {
+    S.screen = s; save(); render();
+    if (s !== raw) history.replaceState({ screen: s }, '', urlFor(s));
+  }
 });
 
+// Reopening the exact invite link they already started on: resume right
+// where they left off instead of re-running the gate. Their invite may
+// already read as "used" by now (redemption happens straight after email
+// verification, long before the flow is actually done), which would
+// otherwise dead-end a legitimate, still-mid-flow candidate.
+const resuming = !!(ENTRY_CODE && S.inviteCode === ENTRY_CODE && S.screen && S.screen !== 'curtain' && S.screen !== 'checking');
+
 const fromUrl = screenFromUrl();
-if (fromUrl) S.screen = fromUrl;
+if (fromUrl && !resuming) S.screen = fromUrl;
+S.screen = landableScreen(S.screen);
 render();
 history.replaceState({ screen: S.screen }, '', urlFor(S.screen));
 
@@ -1380,6 +1424,8 @@ function hasOAuth(){ return cfg('GOOGLE_SIGNIN') || cfg('APPLE_SIGNIN'); }
 
 (async function entry() {
   const code = ENTRY_CODE;
+
+  if (resuming) return;
 
   if (code) {
     show('checking');
