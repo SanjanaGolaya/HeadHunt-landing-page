@@ -834,7 +834,7 @@ builder: function () {
       '<h2>The best thing you\'ve built.</h2>' +
       '<p class="lede">A repo, a product that\'s live, a paper, or a post about something that broke.</p>' +
       '<input class="field wide" id="burl" placeholder="https://" value="' + esc(b.url) + '">' +
-      '<p class="lbl mt">What is it? <span class="accenttext">Required if you skip a link</span></p>' +
+      '<p class="lbl mt">What is it? <span class="mono tiny dim">Optional</span></p>' +
       '<div class="chips">' + kinds.map(function (k) {
         return '<button class="chip ' + (b.kind === k[0] ? 'on' : '') + '" data-act="kind" data-id="' + k[0] + '">' + k[1] + '</button>';
       }).join('') + '</div>' +
@@ -1257,7 +1257,6 @@ kind: function (t) {
 'builder-next': function () {
   const u = val('burl');
   S.builder.url = u;
-  if (!u && !S.builder.kind) return err('b-err', 'Tell us what kind of work this is.');
   if (S.builder.kind === 'other') S.builder.other = val('bother');
   const px = val('paxel').trim();
   if (px && !okPaxel(px)) return err('b-err', 'That is not a Paxel results link. It looks like paxel.ycombinator.com/results/\u2026');
