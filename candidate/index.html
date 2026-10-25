@@ -308,7 +308,14 @@ const API = {
       data = retry.data; error = retry.error;
     }
     if (error) return { ok: false, reason: error.message };
-    await upsert({ email: email, full_name: S.fullName, referred_by: S.referrer });
+    // Signing back in replays this same call with no fresh name typed in,
+    // and S.referrer falls back to a placeholder on a device with nothing
+    // saved locally: only write these on a genuine fresh invite open, so a
+    // sign-in never blanks out what a first verification already saved.
+    const fields = { email: email };
+    if (S.fullName) fields.full_name = S.fullName;
+    if (S.inviteState === 'ok' && S.referrer) fields.referred_by = S.referrer;
+    await upsert(fields);
     return { ok: true, email: email, userId: data.user ? data.user.id : null };
   },
 
@@ -354,6 +361,18 @@ const API = {
   },
 
   async saveIntent(intent) { return upsert({ intent: intent }); },
+
+  // Signing back in on a lost/different session: read back whatever was
+  // already saved under this account so the flow can resume instead of
+  // restarting. RLS only allows a user to read their own row.
+  async getMyProfile() {
+    if (!sb) return null;
+    const user = await currentUser();
+    if (!user) return null;
+    const { data, error } = await sb.from('candidates').select('*').eq('id', user.id).maybeSingle();
+    if (error) return null;
+    return data;
+  },
 
   async submitVouch(v) {
     if (!sb) { await wait(500); return { ok: true, id: 'demo', code: 'DEMO2345' }; }
@@ -666,7 +685,7 @@ used: function () {
     '<div class="body narrow">' +
       '<h2 class="big">This invitation has been used.</h2>' +
       '<p class="lede big">It was good for one person. If it was meant for you, ask ' + who + ' to send another.</p>' +
-      '<p class="fine">Already signed up? Open the link you used the first time, or <a href="#" data-act="go-request">ask us directly</a>.</p>' +
+      '<p class="fine">Already signed up? <a href="#" data-act="go-signin">Sign back in</a>, or <a href="#" data-act="go-request">ask us directly</a>.</p>' +
     '</div>' +
   '</div>';
 },
@@ -717,6 +736,36 @@ emailcode: function () {
       '<p class="err" id="otp-err"></p>' +
     '</div>' +
     footer('', { label: 'Verify', act: 'email-verify' }) +
+  '</div>';
+},
+
+signin: function () {
+  return '<div class="page">' + topbar('Sign back in') +
+    '<div class="body narrow">' +
+      '<h2>Pick up where you left off.</h2>' +
+      '<p class="lede">Enter the email you used before. We will send a code.</p>' +
+      '<label class="lbl">Personal email</label>' +
+      '<input class="field" id="signinEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@gmail.com" value="' + esc(S.auth.email) + '">' +
+      '<p class="err" id="signin-err"></p>' +
+    '</div>' +
+    footer('', { label: 'Send me a code', act: 'signin-start' }) +
+  '</div>';
+},
+
+signincode: function () {
+  return '<div class="page">' + topbar('Sign back in') +
+    '<div class="body narrow">' +
+      '<h2>Check your inbox.</h2>' +
+      '<p class="lede">Your code is on its way to <strong>' + esc(S.auth.email) + '</strong>.</p>' +
+      otpBoxes('signinotp') +
+      '<div class="row gap">' +
+        '<a href="#" data-act="signin-resend">Send it again</a>' +
+        '<span class="vrule"></span>' +
+        '<a href="#" data-act="go-signin">Use a different address</a>' +
+      '</div>' +
+      '<p class="err" id="signin-otp-err"></p>' +
+    '</div>' +
+    footer('', { label: 'Verify', act: 'signin-verify' }) +
   '</div>';
 },
 
@@ -1028,6 +1077,51 @@ function okLinkedIn(s) { return /linkedin\.com\/(in|pub)\//i.test(s) || /^[\w-]{
 // Only a Paxel results link. Anything else is not what we asked for.
 function okPaxel(s) { return /^https:\/\/(www\.)?paxel\.ycombinator\.com\/results\/[A-Za-z0-9_-]{3,64}\/?$/.test(String(s || '').trim()); }
 
+// Rebuild local state from a saved candidates row after signing back in,
+// so a resumed screen shows what was already filled instead of blanks.
+function hydrateFromRow(row) {
+  if (row.full_name) S.fullName = row.full_name;
+  if (row.referred_by) S.referrer = row.referred_by;
+  S.contact.channel = row.contact_channel || '';
+  if (row.contact_channel === 'whatsapp') S.contact.phone = row.contact_value || '';
+  S.contact.verified = !!row.contact_verified;
+  S.linkedinUrl = row.linkedin_url || '';
+  S.consent.profile = !!row.consent_profile;
+  S.consent.signalmap = !!row.consent_signalmap;
+  S.builder.url = row.work_url || '';
+  S.builder.kind = row.work_kind || '';
+  S.builder.other = row.work_kind_other || '';
+  S.builder.paxel = row.paxel_url || '';
+  if (row.city) {
+    S.terms.city = row.city;
+    S.terms.floor = row.cash_floor || S.terms.floor;
+    S.terms.swap = row.cash_to_equity || '';
+    S.terms.team = row.team_size || '';
+    S.terms.days = row.office_days || '';
+    S.terms.start = row.earliest_start || '';
+    S.terms.reloc = row.relocation || '';
+    S.terms.relocCities = row.preferred_cities || [];
+    S.terms.industries = row.industries_preferred || [];
+    S.terms.industry = S.terms.industries.length ? 'some' : 'any';
+    S.terms.trial = row.trial_appetite || '';
+    S.terms.note = row.looking_note || '';
+  }
+  if (row.intent) S.intent = row.intent;
+  save();
+}
+
+// Which screen a signed-back-in candidate should land on, inferred from
+// how far their saved row got. Builder and terms are only written
+// together, in one shot, at the final submit, so either both are there
+// or neither is.
+function resumeScreenFromProfile(row) {
+  if (!row) return 'reach';
+  if (!row.contact_channel) return 'reach';
+  if (!row.linkedin_url) return 'connect';
+  if (!row.city) return 'builder';
+  return 'radar';
+}
+
 function otpValue(wrapId) {
   const w = document.getElementById(wrapId);
   if (!w) return '';
@@ -1110,6 +1204,7 @@ lift: function () {
 
 begin: function () { go('identity'); },
 'go-identity': function () { go('identity'); },
+'go-signin': function () { go('signin'); },
 'go-reach': function () { go('reach'); },
 'go-wanumber': function () { go('wanumber'); },
 'go-radar': function () { go('radar'); },
@@ -1175,6 +1270,31 @@ begin: function () { go('identity'); },
   S.auth.verified = true; save();
   if (S.inviteCode) { const who = await API.redeemInvite(S.inviteCode); if (who) { S.referrer = who; save(); } }
   go('reach');
+},
+
+'signin-start': async function () {
+  const email = val('signinEmail');
+  if (!okEmail(email)) return err('signin-err', 'That does not look like an email address.');
+  err('signin-err', '');
+  busy('signin-start', true, 'Sending…');
+  S.auth.email = email; save();
+  const r = await API.sendEmailCode(email);
+  if (!r.ok) { busy('signin-start', false, 'Send me a code'); return err('signin-err', 'We could not send that. Try again.'); }
+  go('signincode');
+},
+
+'signin-resend': async function () { await API.sendEmailCode(S.auth.email); err('signin-otp-err', 'Sent again.'); },
+
+'signin-verify': async function () {
+  const code = otpValue('signinotp');
+  if (code.length < otpLength()) return err('signin-otp-err', 'Enter the whole code.');
+  busy('signin-verify', true, 'Checking…');
+  const r = await API.verifyEmailCode(S.auth.email, code);
+  if (!r.ok) { busy('signin-verify', false, 'Verify'); return err('signin-otp-err', 'That code did not work.'); }
+  S.auth.verified = true; save();
+  const profile = await API.getMyProfile();
+  if (profile) hydrateFromRow(profile);
+  go(resumeScreenFromProfile(profile));
 },
 
 'reach-pick': function (t) { S.contact.channel = t.dataset.id; save(); render(); },
@@ -1346,6 +1466,7 @@ async function oauth(provider) {
 const BASE = '/candidate';
 const ROUTES = {
   curtain: '', hero: 'welcome', identity: 'login', emailcode: 'verify',
+  signin: 'signin', signincode: 'signin/verify',
   reach: 'reach', wanumber: 'whatsapp', wacode: 'whatsapp/verify',
   connect: 'linkedin', reading: 'linkedin/reading', found: 'review',
   builder: 'work', terms: 'terms', radar: 'radar', vouch: 'vouch'
@@ -1371,8 +1492,14 @@ function screenFromUrl() {
 // nothing left to finish it, so treat it as not landable outside that
 // one brief window and send people back to the linkedin form instead.
 let readingInFlight = false;
+const PRE_VERIFY_SCREENS = { identity: 1, emailcode: 1, signin: 1, signincode: 1 };
 function landableScreen(s) {
-  return (s === 'reading' && !readingInFlight) ? 'connect' : s;
+  if (s === 'reading' && !readingInFlight) return 'connect';
+  // Once an email is verified there is no code-request page left to land
+  // on: back/forward/reload can get no further back than "reach", so
+  // there is never a second code sent for an address already verified.
+  if (S.auth.verified && PRE_VERIFY_SCREENS[s]) return 'reach';
+  return s;
 }
 
 const _go = go;
