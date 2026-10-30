@@ -1075,7 +1075,13 @@ function busy(btnAct, on, label) {
   if (label) b.querySelector('span').textContent = label;
 }
 function okEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s); }
-function okLinkedIn(s) { return /linkedin\.com\/(in|pub)\//i.test(s) || /^[\w-]{3,}$/.test(s); }
+// A real linkedin.com/in/ or /pub/ profile URL only. The old check also
+// accepted any bare word of 3+ characters as "close enough," which let
+// anything through unflagged; this also rejects lookalikes like
+// linkedin.com.evil.com the same way the Paxel field already does.
+function okLinkedIn(s) {
+  return /^(https?:\/\/)?([a-z]{1,3}\.)?(www\.)?linkedin\.com\/(in|pub)\/[a-zA-Z0-9À-ÿ][a-zA-Z0-9À-ÿ-]{1,98}\/?(\?.*)?$/i.test(String(s || '').trim());
+}
 
 // Only a Paxel results link. Anything else is not what we asked for.
 function okPaxel(s) { return /^https:\/\/(www\.)?paxel\.ycombinator\.com\/results\/[A-Za-z0-9_-]{3,64}\/?$/.test(String(s || '').trim()); }
