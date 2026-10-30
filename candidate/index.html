@@ -466,7 +466,7 @@ const BLANK = {
   found: null,
   removed: [],
   builder: { url: '', kind: '', other: '', repoIsBest: '', paxel: '' },
-  terms: { i: 0, city: '', floor: 48, swap: '', team: '', days: '', start: '', noticeWeeks: '', reloc: '', relocCities: [], industry: '', industries: [], trial: [], note: '' },
+  terms: { i: 0, city: '', floor: 48, swap: '', team: '', days: '', start: '', noticeWeeks: '', reloc: '', relocCities: [], industry: '', industries: [], industryOtherText: '', trial: [], note: '' },
   intent: 'open',
   vouches: []
 };
@@ -949,12 +949,15 @@ terms: function () {
     }
     let c = chips(q);
     if (q.key === 'industry' && t.industry === 'some') {
-      c += '<div class="chips tight">' + INDUSTRIES.map(function (n) {
+      c += '<div class="chips tight">' + INDUSTRIES.concat(['Other']).map(function (n) {
         return '<button class="chip xs ' + (t.industries.indexOf(n) > -1 ? 'on' : '') + '" data-act="ind" data-n="' + n + '">' + n + '</button>';
       }).join('') + '</div>';
+      if (t.industries.indexOf('Other') > -1) {
+        c += '<input class="field slim" id="industryOther" placeholder="Which one?" autocomplete="off" value="' + esc(t.industryOtherText) + '">';
+      }
     }
     if (q.key === 'reloc' && t.reloc === 'yes') {
-      c += '<div class="combo"><input class="field slim" id="relocCityInput" placeholder="Type a city to add it" autocomplete="off">' +
+      c += '<div class="combo"><input class="field slim" id="relocCityInput" placeholder="Type any city, pick a match or press Enter to add it" autocomplete="off">' +
         '<div class="menu" id="relocCityMenu"></div></div>' +
         (t.relocCities.length ? '<div class="chips tight">' + t.relocCities.map(function (n) {
           return '<button class="chip xs on" data-act="relocCityRemove" data-city="' + esc(n) + '">' + esc(n) + ' ×</button>';
@@ -1235,28 +1238,59 @@ function wire() {
     });
   }
 
-  // relocation cities: typeahead that adds to a list instead of one value
+  // relocation cities: typeahead that adds to a list instead of one value.
+  // The suggestion list is a curated ~35 cities, not exhaustive, so a city
+  // that isn't in it can still be added directly: "Add '<what you typed>'"
+  // shows up as its own option, and Enter adds it without needing a click.
   const relocCityInput = document.getElementById('relocCityInput');
   if (relocCityInput) {
     const menu = document.getElementById('relocCityMenu');
+    const addCity = function (name) {
+      const c = name.trim();
+      if (!c || S.terms.relocCities.indexOf(c) > -1) return;
+      S.terms.relocCities.push(c);
+      relocCityInput.value = '';
+      save(); render();
+    };
     const draw = function () {
-      const q = relocCityInput.value.toLowerCase();
+      const raw = relocCityInput.value.trim();
+      const q = raw.toLowerCase();
       const hits = CITIES.filter(function (c) {
         return (!q || c.toLowerCase().indexOf(q) > -1) && S.terms.relocCities.indexOf(c) === -1;
-      }).slice(0, 7);
-      menu.innerHTML = hits.map(function (c) { return '<div class="mi" data-city="' + c + '">' + c + '</div>'; }).join('');
-      menu.classList.toggle('show', hits.length > 0);
+      }).slice(0, 6);
+      let html = hits.map(function (c) { return '<div class="mi" data-city="' + esc(c) + '">' + esc(c) + '</div>'; }).join('');
+      const exact = CITIES.some(function (c) { return c.toLowerCase() === q; });
+      if (raw && !exact && S.terms.relocCities.indexOf(raw) === -1) {
+        html += '<div class="mi" data-city="' + esc(raw) + '">Add "' + esc(raw) + '"</div>';
+      }
+      menu.innerHTML = html;
+      menu.classList.toggle('show', html.length > 0);
     };
     relocCityInput.addEventListener('focus', draw);
     relocCityInput.addEventListener('input', draw);
+    relocCityInput.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const firstMi = menu.querySelector('.mi');
+      addCity(firstMi ? firstMi.dataset.city : relocCityInput.value);
+    });
     menu.addEventListener('mousedown', function (e) {
       const mi = e.target.closest('.mi');
       if (!mi) return;
       e.preventDefault();
-      S.terms.relocCities.push(mi.dataset.city);
-      save(); render();
+      addCity(mi.dataset.city);
     });
     relocCityInput.addEventListener('blur', function () { setTimeout(function () { menu.classList.remove('show'); }, 120); });
+  }
+
+  // industry "Other": typed, live-synced so it survives a re-render
+  // triggered by any other question on the page.
+  const industryOtherEl = document.getElementById('industryOther');
+  if (industryOtherEl) {
+    industryOtherEl.addEventListener('input', function () {
+      S.terms.industryOtherText = industryOtherEl.value;
+      save();
+    });
   }
 
   // "what are you looking for": live word count, soft-capped at 500
@@ -1503,6 +1537,12 @@ multipick: function (t) {
   if (S.terms.start === 'notice') {
     const nw = parseInt(val('noticeweeks'), 10);
     S.terms.noticeWeeks = isNaN(nw) ? '' : nw;
+  }
+  const otherIdx = S.terms.industries.indexOf('Other');
+  if (otherIdx > -1) {
+    const otherText = val('industryOther').trim();
+    if (otherText) S.terms.industries[otherIdx] = otherText;
+    else S.terms.industries.splice(otherIdx, 1);
   }
   const missing = QUESTIONS.filter(function (q) {
     if (q.type === 'money') return false;
