@@ -130,6 +130,7 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 
 .rows{max-width:860px;margin-top:8px}
 .frow{display:grid;grid-template-columns:minmax(0,1fr) 170px 76px;gap:18px;align-items:center;padding:13px 0;border-top:1px solid var(--line)}
+.frow .mono{overflow-wrap:anywhere}
 .frow:first-child{border-top-color:var(--line2)}
 .frow:last-child{border-bottom:1px solid var(--line2)}
 .fname{margin:0 0 2px;font-size:15px;font-weight:700}
@@ -235,6 +236,7 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 @media (max-width:640px){
   .bar > span{display:none}
   .bar{padding-top:14px;padding-bottom:14px}
+  .frow{grid-template-columns:1fr;gap:8px;justify-items:start}
 }
 @media (max-width:480px){
   .cell{width:100%;height:58px;font-size:22px}
@@ -390,6 +392,18 @@ const API = {
     const { data, error } = await sb.from('candidates').select('*').eq('id', user.id).maybeSingle();
     if (error) return null;
     return data;
+  },
+
+  // Has this person already been vouched for, by anyone, ever, either
+  // under this exact email or under this LinkedIn with a different
+  // email. RLS only lets a user read their own referrals, so this runs
+  // through a security-definer function instead of a direct table read.
+  async checkReferralTarget(email, linkedin) {
+    if (!sb) return { email_used: false, linkedin_used_different_email: false };
+    const { data, error } = await sb.rpc('referral_target_check', { p_email: email, p_linkedin: linkedin });
+    if (error) return { email_used: false, linkedin_used_different_email: false };
+    const row = Array.isArray(data) ? data[0] : data;
+    return row || { email_used: false, linkedin_used_different_email: false };
   },
 
   async submitVouch(v) {
@@ -1055,7 +1069,7 @@ radar: function () {
 vouch: function () {
   return '<div class="page">' + topbar(esc(S.auth.email) + ' · stealth') +
     '<div class="body">' +
-      '<p class="eyebrow">Referral ' + (S.vouches.length + 1) + ' of 2 · <span class="accenttext">one of two you will ever have</span></p>' +
+      '<p class="eyebrow">Referral ' + (S.vouches.length + 1) + ' of 2</p>' +
       '<h2>Who are you vouching for?</h2>' +
       '<p class="lede">They never see what you wrote. We do, and it is the first thing we read.</p>' +
       '<div class="two">' +
@@ -1064,13 +1078,13 @@ vouch: function () {
         '<div><label class="lbl">Their email <span class="accenttext">Required</span></label>' +
           '<input class="field" id="vem" type="email" placeholder="name@company.com"></div>' +
       '</div>' +
-      '<label class="lbl mt">Why do they belong here? <span class="mono tiny dim">Optional</span></label>' +
+      '<label class="lbl mt">Why do they belong here? <span class="accenttext">Required</span></label>' +
       '<p class="fine">What makes them stand apart, and would you personally take a bet on them?</p>' +
       '<textarea class="field area" id="vwhy" rows="4" placeholder="She rewrote our billing engine over one quarter while nobody was watching, then wrote the postmortem herself."></textarea>' +
       '<p class="err" id="v-err"></p>' +
     '</div>' +
     footer('<button class="ghost" data-act="go-radar">' + backArrow() + '<span>Back</span></button>',
-      { label: 'Send the vouch', act: 'vouch-send' }, { hint: 'LinkedIn and email are the minimum' }) +
+      { label: 'Send the vouch', act: 'vouch-send' }) +
   '</div>';
 }
 
@@ -1600,12 +1614,20 @@ intent: function (t) {
 },
 
 'vouch-send': async function () {
-  const li = val('vli'), em = val('vem');
+  const li = val('vli'), em = val('vem'), why = val('vwhy').trim();
   if (!okLinkedIn(li)) return err('v-err', 'Their LinkedIn is required.');
   if (!okEmail(em)) return err('v-err', 'Their email is required.');
+  if (!why) return err('v-err', 'Tell us why they belong here.');
+  const selfByEmail = em.trim().toLowerCase() === (S.auth.email || '').trim().toLowerCase();
+  const selfByLinkedIn = S.linkedinUrl && li.trim().toLowerCase() === S.linkedinUrl.trim().toLowerCase();
+  if (selfByEmail || selfByLinkedIn) return err('v-err', 'You cannot vouch for yourself.');
   err('v-err', '');
+  busy('vouch-send', true, 'Checking…');
+  const dup = await API.checkReferralTarget(em, li);
+  if (dup.email_used) { busy('vouch-send', false, 'Send the vouch'); return err('v-err', 'That email has already been referred.'); }
+  if (dup.linkedin_used_different_email) { busy('vouch-send', false, 'Send the vouch'); return err('v-err', 'That LinkedIn profile has already been referred, under a different email.'); }
   busy('vouch-send', true, 'Sending…');
-  const r = await API.submitVouch({ linkedin: li, email: em, why: val('vwhy'), from: S.fullName });
+  const r = await API.submitVouch({ linkedin: li, email: em, why: why, from: S.fullName });
   if (!r.ok) { busy('vouch-send', false, 'Send the vouch'); return err('v-err', 'That did not go through.'); }
   S.vouches.push({ linkedin: li, email: em, id: r.id, code: r.code || '' });
   save(); go('radar');
