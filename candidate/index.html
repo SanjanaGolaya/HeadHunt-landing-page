@@ -353,10 +353,11 @@ const API = {
       team_size: t.team,
       office_days: t.days,
       earliest_start: t.start,
+      notice_weeks: t.start === 'notice' ? t.noticeWeeks : null,
       relocation: t.reloc,
-      preferred_cities: (t.reloc && t.reloc !== 'no') ? t.relocCities : [],
+      preferred_cities: t.reloc === 'yes' ? t.relocCities : [],
       industries_preferred: t.industry === 'some' ? t.industries : [],
-      trial_appetite: t.trial,
+      interview_steps_ok: t.trial,
       looking_note: t.note,
       intent: state.intent
     });
@@ -465,7 +466,7 @@ const BLANK = {
   found: null,
   removed: [],
   builder: { url: '', kind: '', other: '', repoIsBest: '', paxel: '' },
-  terms: { i: 0, city: '', floor: 48, swap: '', team: '', days: '', start: '', reloc: '', relocCities: [], industry: '', industries: [], trial: '', note: '' },
+  terms: { i: 0, city: '', floor: 48, swap: '', team: '', days: '', start: '', noticeWeeks: '', reloc: '', relocCities: [], industry: '', industries: [], trial: [], note: '' },
   intent: 'open',
   vouches: []
 };
@@ -516,6 +517,13 @@ function load() {
       ['auth', 'contact', 'consent', 'request', 'builder', 'terms'].forEach(function (k) {
         merged[k] = Object.assign({}, blank[k], saved[k] || {});
       });
+      // "trial" moved from a single value to a multi-select array, and
+      // "reloc" dropped its old "right" (for the right one) option: a
+      // stale shape here would crash the multi-select toggle rather than
+      // just render as unanswered, so normalize rather than merge blind.
+      if (!Array.isArray(merged.terms.trial)) merged.terms.trial = [];
+      if (merged.terms.reloc !== 'no' && merged.terms.reloc !== 'yes') merged.terms.reloc = '';
+      if (merged.terms.start !== 'now' && merged.terms.start !== 'notice') merged.terms.start = '';
       return merged;
     }
   } catch (e) { /* private mode, blocked storage */ }
@@ -556,31 +564,35 @@ const CITIES = [
 ];
 
 const INDUSTRIES = [
-  'Fintech', 'Healthcare', 'Defence', 'Gambling', 'Crypto', 'Adtech',
-  'Ecommerce', 'Edtech', 'Logistics', 'Gaming', 'Social', 'Tobacco or alcohol'
+  'Fintech', 'Healthcare', 'AI', 'Robotics', 'Defence', 'Crypto', 'Adtech',
+  'Ecommerce', 'Quick commerce', 'Edtech', 'Logistics', 'Supply chain', 'Gaming', 'Social'
 ];
 
 const QUESTIONS = [
-  { key: 'city', short: 'Based in', title: 'Where are you based?', help: 'The city we match you against. Remote roles ignore it.', type: 'city' },
-  { key: 'floor', short: 'Cash floor', title: 'The number below which it is a no.', help: 'Fixed cash, not total comp. We never show it to a founder, we just refuse to waste your time under it.', type: 'money' },
-  { key: 'swap', short: 'Cash to equity', title: 'Would you swap cash for equity?', help: 'There is no wrong answer, just tell us where your head is at.', type: 'pick',
-    options: [['buyin', "I'd prefer a buy in"], ['open', "I'm open"], ['cash', "I'm focused on cash right now"]] },
-  { key: 'team', short: 'Team size', title: 'How big is the engineering team you want to join?', help: 'Where you would be landing on day one.', type: 'pick',
-    options: [['0', 'Zero, I want to be the first'], ['1-5', '1 to 5'], ['5-15', '5 to 15'], ['15+', '15+']] },
-  { key: 'days', short: 'Office days', title: 'How many days in an office?', help: 'Six-day weeks exist in this market. Say no now rather than at the offer.', type: 'pick',
-    options: [['0', 'Fully remote'], ['hybrid', 'Hybrid'], ['5', '5 days'], ['6', "I'm okay with 996 culture"]] },
-  { key: 'start', short: 'Earliest start', title: 'How soon could you start?', help: 'Notice periods are the single biggest reason good matches die.', type: 'pick',
-    options: [['now', 'Immediately'], ['30d', '30 days'], ['60d', '60 days'], ['90d', '90 days'], ['buyout', 'Only with a buyout']] },
+  { key: 'city', short: 'Based in', title: 'Where are you based?', help: '', type: 'city' },
   { key: 'reloc', short: 'Relocation', title: 'Would you move cities?', help: 'Half our roles are Bengaluru, the rest are split across other major cities. If you would move, tell us where.', type: 'pick',
-    options: [['no', 'No'], ['right', 'For the right one'], ['yes', 'Yes']] },
-  { key: 'industry', short: 'Industry', title: 'Any industries you prefer?', help: 'Most people are agnostic. If you are drawn to specific ones, pick them from the list.', type: 'pick',
+    options: [['no', 'No'], ['yes', 'Yes']] },
+  { key: 'floor', short: 'Cash floor', title: 'The number below which it is a no.', help: 'Fixed cash, excluding equity. We never show this to a founder.', type: 'money' },
+  { key: 'swap', short: 'Cash to equity', title: 'Would you take a pay cut for an equity buy-in?', help: 'There is no wrong answer.', type: 'pick',
+    options: [['buyin', "I'd prefer a buy-in with a startup that's growing rapidly"], ['open', "I'm open to the offer"], ['cash', "I'm focused on just a good fixed cash base right now"]] },
+  { key: 'team', short: 'Team size', title: 'How big is the engineering team you want to join?', help: '', type: 'pick',
+    options: [['0', 'Zero, I want to be the first'], ['1-5', '1 to 5'], ['5-15', '5 to 15'], ['15+', '15+']] },
+  { key: 'days', short: 'Office days', title: 'How many days in office?', help: 'Six-day weeks exist in this market.', type: 'pick',
+    options: [['0', 'Fully remote'], ['hybrid', 'Hybrid'], ['5', '5 days'], ['6', "I'm okay with 996 culture"]] },
+  { key: 'start', short: 'Earliest start', title: 'How soon could you start?', help: '', type: 'pick',
+    options: [['now', 'Immediately'], ['notice', 'I need to serve a notice period']] },
+  { key: 'industry', short: 'Industry', title: 'Any industries you prefer?', help: '', type: 'pick',
     options: [['any', 'Industry agnostic'], ['some', 'I have preferences']] },
-  { key: 'trial', short: 'Working trials', title: 'How far will you go before an offer?', help: 'Work trials, take-home assessments and co-work months are common in this market. Tell us now what you will sit through.', type: 'pick',
-    options: [['none', 'Not interested'], ['take', 'Take-home only'], ['paid', 'Paid trial, 3 to 5 days'], ['week', 'A full week'], ['month', 'A co-work month']] }
+  { key: 'trial', short: 'Interview steps', title: 'Which interview steps are you okay with?', help: 'Choose all that apply.', type: 'multipick',
+    options: [['intro', 'Intro plus a technical interview'], ['takehome', 'A take-home assignment'], ['paid', 'A paid trial, 3 to 5 days'], ['week', 'A full week work trial'], ['month', 'A co-work month']] }
 ];
 
 function answerOf(q) {
   const v = S.terms[q.key];
+  if (q.type === 'multipick') return v && v.length ? v.map(function (id) {
+    const hit = q.options.filter(function (o) { return o[0] === id; })[0];
+    return hit ? hit[1] : id;
+  }).join(', ') : '';
   if (!v && v !== 0) return '';
   if (q.type === 'city') return v;
   if (q.type === 'money') return '₹' + v + ' LPA';
@@ -908,12 +920,17 @@ terms: function () {
   const t = S.terms;
   const row = function (q, control) {
     return '<div class="qrow" id="row-' + q.key + '">' +
-      '<div class="qlab"><p class="qt">' + q.title.replace(/\?$/, '') + '</p><p class="qh">' + q.help + '</p></div>' +
+      '<div class="qlab"><p class="qt">' + q.title.replace(/\?$/, '') + '</p>' + (q.help ? '<p class="qh">' + q.help + '</p>' : '') + '</div>' +
       '<div class="qctl">' + control + '</div></div>';
   };
   const chips = function (q) {
     return '<div class="chips">' + q.options.map(function (o) {
       return '<button class="chip sm ' + (t[q.key] === o[0] ? 'on' : '') + '" data-act="pick" data-key="' + q.key + '" data-id="' + o[0] + '">' + o[1] + '</button>';
+    }).join('') + '</div>';
+  };
+  const multiChips = function (q) {
+    return '<div class="chips">' + q.options.map(function (o) {
+      return '<button class="chip sm ' + (t[q.key].indexOf(o[0]) > -1 ? 'on' : '') + '" data-act="multipick" data-key="' + q.key + '" data-id="' + o[0] + '">' + o[1] + '</button>';
     }).join('') + '</div>';
   };
 
@@ -927,16 +944,24 @@ terms: function () {
         '<input class="field slim" id="floorinput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="' + t.floor + '">' +
         '<span>LPA</span></div>');
     }
+    if (q.type === 'multipick') {
+      return row(q, multiChips(q));
+    }
     let c = chips(q);
     if (q.key === 'industry' && t.industry === 'some') {
       c += '<div class="chips tight">' + INDUSTRIES.map(function (n) {
         return '<button class="chip xs ' + (t.industries.indexOf(n) > -1 ? 'on' : '') + '" data-act="ind" data-n="' + n + '">' + n + '</button>';
       }).join('') + '</div>';
     }
-    if (q.key === 'reloc' && t.reloc && t.reloc !== 'no') {
-      c += '<div class="chips tight">' + CITIES.map(function (n) {
-        return '<button class="chip xs ' + (t.relocCities.indexOf(n) > -1 ? 'on' : '') + '" data-act="relocn" data-n="' + n + '">' + n + '</button>';
-      }).join('') + '</div>';
+    if (q.key === 'reloc' && t.reloc === 'yes') {
+      c += '<div class="combo"><input class="field slim" id="relocCityInput" placeholder="Type a city to add it" autocomplete="off">' +
+        '<div class="menu" id="relocCityMenu"></div></div>' +
+        (t.relocCities.length ? '<div class="chips tight">' + t.relocCities.map(function (n) {
+          return '<button class="chip xs on" data-act="relocCityRemove" data-city="' + esc(n) + '">' + esc(n) + ' ×</button>';
+        }).join('') + '</div>' : '');
+    }
+    if (q.key === 'start' && t.start === 'notice') {
+      c += '<div class="moneyrow slim"><input class="field slim" id="noticeweeks" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="e.g. 4" value="' + (t.noticeWeeks || '') + '"><span>weeks</span></div>';
     }
     return row(q, c);
   }).join('');
@@ -949,9 +974,10 @@ terms: function () {
       '</div>' +
       '<div class="qlist">' + rows + '</div>' +
       '<div class="panel mt">' +
-        '<p class="fname">What are you actually looking for? <span class="mono tiny dim">Optional</span></p>' +
+        '<p class="fname">What are you actually looking for? <span class="mono tiny dim">Optional · up to 500 words</span></p>' +
         '<p class="fine">In your own words, what and why. The more specific, the better we can go find it.</p>' +
         '<textarea class="field area" id="tnote" rows="4" placeholder="What you want next, and why.">' + esc(t.note) + '</textarea>' +
+        '<p class="mono tiny dim" id="tnote-count">0 / 500 words</p>' +
       '</div>' +
       '<p class="err" id="t-err"></p>' +
     '</div>' +
@@ -1108,11 +1134,12 @@ function hydrateFromRow(row) {
     S.terms.team = row.team_size || '';
     S.terms.days = row.office_days || '';
     S.terms.start = row.earliest_start || '';
+    S.terms.noticeWeeks = row.notice_weeks || '';
     S.terms.reloc = row.relocation || '';
     S.terms.relocCities = row.preferred_cities || [];
     S.terms.industries = row.industries_preferred || [];
     S.terms.industry = S.terms.industries.length ? 'some' : 'any';
-    S.terms.trial = row.trial_appetite || '';
+    S.terms.trial = row.interview_steps_ok || [];
     S.terms.note = row.looking_note || '';
   }
   if (row.intent) S.intent = row.intent;
@@ -1184,13 +1211,68 @@ function wire() {
     city.addEventListener('blur', function () { setTimeout(function () { menu.classList.remove('show'); }, 120); });
   }
 
-  // cash floor: typed, digits only, no up/down steppers
+  // cash floor: typed, digits only, no up/down steppers. Synced into state
+  // on every keystroke, not just at submit: any other question on this
+  // page re-renders the whole screen on click, which would otherwise wipe
+  // whatever was typed here back to its last-saved value.
   const floorInput = document.getElementById('floorinput');
   if (floorInput) {
     floorInput.addEventListener('input', function () {
       const digits = floorInput.value.replace(/\D/g, '');
       if (digits !== floorInput.value) floorInput.value = digits;
+      if (digits) { S.terms.floor = parseInt(digits, 10); save(); }
     });
+  }
+
+  // notice period: typed weeks, digits only, same live-sync as the floor.
+  const noticeInput = document.getElementById('noticeweeks');
+  if (noticeInput) {
+    noticeInput.addEventListener('input', function () {
+      const digits = noticeInput.value.replace(/\D/g, '');
+      if (digits !== noticeInput.value) noticeInput.value = digits;
+      S.terms.noticeWeeks = digits ? parseInt(digits, 10) : '';
+      save();
+    });
+  }
+
+  // relocation cities: typeahead that adds to a list instead of one value
+  const relocCityInput = document.getElementById('relocCityInput');
+  if (relocCityInput) {
+    const menu = document.getElementById('relocCityMenu');
+    const draw = function () {
+      const q = relocCityInput.value.toLowerCase();
+      const hits = CITIES.filter(function (c) {
+        return (!q || c.toLowerCase().indexOf(q) > -1) && S.terms.relocCities.indexOf(c) === -1;
+      }).slice(0, 7);
+      menu.innerHTML = hits.map(function (c) { return '<div class="mi" data-city="' + c + '">' + c + '</div>'; }).join('');
+      menu.classList.toggle('show', hits.length > 0);
+    };
+    relocCityInput.addEventListener('focus', draw);
+    relocCityInput.addEventListener('input', draw);
+    menu.addEventListener('mousedown', function (e) {
+      const mi = e.target.closest('.mi');
+      if (!mi) return;
+      e.preventDefault();
+      S.terms.relocCities.push(mi.dataset.city);
+      save(); render();
+    });
+    relocCityInput.addEventListener('blur', function () { setTimeout(function () { menu.classList.remove('show'); }, 120); });
+  }
+
+  // "what are you looking for": live word count, soft-capped at 500
+  const noteEl = document.getElementById('tnote');
+  if (noteEl) {
+    const noteCount = document.getElementById('tnote-count');
+    const update = function () {
+      let words = noteEl.value.trim().split(/\s+/).filter(Boolean);
+      if (words.length > 500) {
+        words = words.slice(0, 500);
+        noteEl.value = words.join(' ');
+      }
+      if (noteCount) noteCount.textContent = words.length + ' / 500 words';
+    };
+    noteEl.addEventListener('input', update);
+    update();
   }
 }
 
@@ -1403,9 +1485,14 @@ ind: function (t) {
   if (at > -1) list.splice(at, 1); else list.push(n);
   save(); render();
 },
-relocn: function (t) {
-  const n = t.dataset.n, list = S.terms.relocCities, at = list.indexOf(n);
-  if (at > -1) list.splice(at, 1); else list.push(n);
+relocCityRemove: function (t) {
+  const n = t.dataset.city, list = S.terms.relocCities, at = list.indexOf(n);
+  if (at > -1) list.splice(at, 1);
+  save(); render();
+},
+multipick: function (t) {
+  const key = t.dataset.key, id = t.dataset.id, list = S.terms[key], at = list.indexOf(id);
+  if (at > -1) list.splice(at, 1); else list.push(id);
   save(); render();
 },
 'terms-submit': async function () {
@@ -1413,9 +1500,14 @@ relocn: function (t) {
   if (c) S.terms.city = c;
   const fl = parseInt(val('floorinput'), 10);
   if (!isNaN(fl)) S.terms.floor = Math.max(10, fl);
+  if (S.terms.start === 'notice') {
+    const nw = parseInt(val('noticeweeks'), 10);
+    S.terms.noticeWeeks = isNaN(nw) ? '' : nw;
+  }
   const missing = QUESTIONS.filter(function (q) {
     if (q.type === 'money') return false;
     if (q.type === 'city') return !S.terms.city;
+    if (q.type === 'multipick') return !S.terms[q.key].length;
     return !S.terms[q.key];
   });
   if (missing.length) {
@@ -1424,8 +1516,11 @@ relocn: function (t) {
     return err('t-err', missing.length + ' left: ' + missing.map(function (q) { return q.short.toLowerCase(); }).join(', ') + '.');
   }
   if (S.terms.industry === 'some' && !S.terms.industries.length) return err('t-err', 'Pick at least one industry.');
-  if (S.terms.reloc && S.terms.reloc !== 'no' && !S.terms.relocCities.length) return err('t-err', 'Pick at least one city you would move to.');
-  S.terms.note = val('tnote');
+  if (S.terms.reloc === 'yes' && !S.terms.relocCities.length) return err('t-err', 'Add at least one city you would move to.');
+  if (S.terms.start === 'notice' && !S.terms.noticeWeeks) return err('t-err', 'Tell us how many weeks notice you need.');
+  let noteWords = val('tnote').split(/\s+/).filter(Boolean);
+  if (noteWords.length > 500) noteWords = noteWords.slice(0, 500);
+  S.terms.note = noteWords.join(' ');
   err('t-err', '');
   busy('terms-submit', true, 'Sending…');
   await API.saveProfile(S);
