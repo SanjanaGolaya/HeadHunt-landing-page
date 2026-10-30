@@ -704,6 +704,7 @@ request: function () {
     '<div class="body narrow">' +
       '<h2>Ask for an invitation.</h2>' +
       '<p class="lede">HeadHunt is closed. Tell us who you are and make the case, and we will come back to you.</p>' +
+      '<p class="fine">Already signed up? <a href="#" data-act="go-signin">Sign back in</a> instead.</p>' +
       '<label class="lbl">Your name</label>' +
       '<input class="field" id="rqname" autocomplete="name" placeholder="First and last name" value="' + esc(r.name) + '">' +
       '<label class="lbl mt">Personal email</label>' +
@@ -1785,13 +1786,22 @@ function hasOAuth(){ return cfg('GOOGLE_SIGNIN') || cfg('APPLE_SIGNIN'); }
   if (!S.inviteCode && !S.auth.verified) { S.mode = 'request'; save(); show('curtain'); }
 })();
 
+// A live Supabase session can outlive this app's own local state (private
+// mode quirks, a cleared hh_candidate_v1 key, a shared cookie jar). If one
+// turns up on curtain/identity, treat it exactly like signing back in:
+// read the saved profile back and resume at the real step, not just
+// "reach" with nothing loaded.
 (async function(){
   if(!sb) return;
   const { data } = await sb.auth.getSession();
   if(data && data.session && data.session.user && !S.auth.verified){
     S.auth={email:data.session.user.email,provider:'oauth',verified:true};
     save();
-    if(S.screen==='curtain'||S.screen==='identity') go('reach');
+    if(S.screen==='curtain'||S.screen==='identity'){
+      const profile = await API.getMyProfile();
+      if (profile) hydrateFromRow(profile);
+      go(resumeScreenFromProfile(profile));
+    }
   }
 })();
 
