@@ -11,7 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/candidate/config.js"></script>
 <style>
-:root{--gut:clamp(20px,4vw,56px);--ink:#161316;--paper:#fcfcfb;--ground:#eef1f2;--muted:#62696f;--line:#d3d8db;--line2:#9ca5aa;--accent:#FF6D29;--accent2:#D9541A;--panel:#f6f8f8}
+:root{--gut:clamp(20px,4vw,56px);--ink:#111315;--paper:#fcfcfb;--ground:#eef1f2;--muted:#62696f;--line:#d3d8db;--line2:#9ca5aa;--accent:#d94b24;--accent2:#b03a17;--panel:#f6f8f8}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:var(--paper);min-height:100%}
 body{font-family:'Source Serif 4',Georgia,'Times New Roman',serif;color:var(--ink);-webkit-font-smoothing:antialiased}
@@ -63,21 +63,6 @@ h2.big{font-size:clamp(34px,6vw,64px)}
 .mt-sm{margin-top:14px}
 .err{margin:10px 0 0;min-height:18px;font-size:14px;color:#a63e1c}
 .grey{color:var(--line2)}
-
-/* Hand-drawn figures: a wink at specific moments, never more than one
-   per screen. Flat opacity instead of color filters so they read as
-   pencil sketches rather than UI icons. */
-.sketch{display:block;width:60px;height:auto;opacity:.9;pointer-events:none}
-.sketch-lg{width:84px}
-.sketch-inline{float:right;margin:-6px 0 0 18px}
-.sketch-q{float:right;width:42px;margin:-4px 0 6px 10px}
-.sketch-wide{width:auto;height:38px}
-.sketch-row{display:flex;align-items:flex-start;gap:20px}
-.sketch-row>img{flex-shrink:0;margin-top:6px}
-.sketch-row-tight{align-items:center;gap:12px;margin-top:10px}
-.sketch-row-tight img{width:38px;margin-top:0}
-@media (max-width:640px){.sketch-row{gap:10px}.sketch-row img{width:42px}}
-@media (max-width:640px){.sketch-inline{float:none;margin:0 0 10px}}
 
 .field{width:100%;max-width:520px;padding:0 16px;min-height:54px;border:1px solid var(--line2);border-radius:4px;background:#fff;font-family:inherit;font-size:16px;color:var(--ink);outline:none}
 .field:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(217,75,36,.12)}
@@ -928,11 +913,8 @@ builder: function () {
   const kinds = [['gh', 'GitHub'], ['live', 'Something live'], ['writing', 'Writing'], ['paper', 'Paper'], ['hf', 'Hugging Face'], ['other', 'Other']];
   return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(2) +
     '<div class="body">' +
-      '<div class="sketch-row">' +
-      '<div><p class="eyebrow">Show us who you are as a builder</p>' +
-      '<h2>The best thing you\'ve built.</h2></div>' +
-      '<img class="sketch" src="/assets/figures/figure-laptop.png" alt="" aria-hidden="true">' +
-      '</div>' +
+      '<p class="eyebrow">Show us who you are as a builder</p>' +
+      '<h2>The best thing you\'ve built.</h2>' +
       '<p class="lede">A repo, a product that\'s live, a paper, or a post about something that broke.</p>' +
       '<input class="field wide" id="burl" placeholder="https://" value="' + esc(b.url) + '">' +
       '<p class="lbl mt">What is it? <span class="mono tiny dim">Optional</span></p>' +
@@ -954,13 +936,9 @@ builder: function () {
 
 terms: function () {
   const t = S.terms;
-  const QFIGURES = { swap: 'shrug', days: 'backache', start: 'run' };
   const row = function (q, control) {
-    const fig = QFIGURES[q.key];
     return '<div class="qrow" id="row-' + q.key + '">' +
-      '<div class="qlab">' +
-      (fig ? '<img class="sketch sketch-q" src="/assets/figures/figure-' + fig + '.png" alt="" aria-hidden="true">' : '') +
-      '<p class="qt">' + q.title.replace(/\?$/, '') + '</p>' + (q.help ? '<p class="qh">' + q.help + '</p>' : '') + '</div>' +
+      '<div class="qlab"><p class="qt">' + q.title.replace(/\?$/, '') + '</p>' + (q.help ? '<p class="qh">' + q.help + '</p>' : '') + '</div>' +
       '<div class="qctl">' + control + '</div></div>';
   };
   const chips = function (q) {
@@ -1039,7 +1017,6 @@ radar: function () {
   return '<div class="page">' + topbar(esc(S.auth.email) + ' · stealth') +
     '<div class="split wide">' +
       '<div class="body">' +
-        '<img class="sketch sketch-lg sketch-inline" src="/assets/figures/figure-celebrate.png" alt="" aria-hidden="true">' +
         '<h2 class="big">You\'re on<br>the radar.</h2>' +
         '<p class="lede big">The mandatory bit is done. From here we only write when there is a named company and a role that matches your preferences exactly.</p>' +
         '<button class="linkbtn mono tiny" data-act="go-terms">Edit your profile</button>' +
@@ -1068,7 +1045,7 @@ radar: function () {
             ? '<button class="cta accent" data-act="intent-save"><span>Save</span></button>'
             : '<button class="cta accent off" data-act="intent-save" disabled><span>Saved.</span></button>') + '</div>' +
         '</div>' +
-        '<div class="note"><img class="sketch sketch-q sketch-wide" src="/assets/figures/figure-curled.png" alt="" aria-hidden="true"><p class="fname">Not looking at all?</p><p class="fine">Pick the third one and forget we exist. We would rather hold you dormant for two years than lose you because we pushed.</p></div>' +
+        '<div class="note"><p class="fname">Not looking at all?</p><p class="fine">Pick the third one and forget we exist. We would rather hold you dormant for two years than lose you because we pushed.</p></div>' +
         '<p class="mono tiny dim">Vouched by ' + esc(S.referrer) + ' · <a href="#" data-act="wipe">delete everything</a></p>' +
       '</div>' +
     '</div>' +
@@ -1103,12 +1080,8 @@ vouch: function () {
 
 function heroInner() {
   return topbar(inviteLabel()) +
-    '<div class="herobody">' +
-    '<h1>' + esc(S.referrer) + '<br><span class="grey">vouched for you.</span></h1>' +
-    '<div class="sketch-row sketch-row-tight">' +
-    '<p class="mono tiny dim">Elite talent. <span class="accenttext">Privately accessed.</span></p>' +
-    '<img class="sketch" src="/assets/figures/figure-wave.png" alt="" aria-hidden="true">' +
-    '</div></div>' +
+    '<div class="herobody"><h1>' + esc(S.referrer) + '<br><span class="grey">vouched for you.</span></h1>' +
+    '<p class="mono tiny dim">Elite talent. <span class="accenttext">Privately accessed.</span></p></div>' +
     '<div class="stats">' +
       stat('Top 1%', "Of India's tech talent") + stat('₹70LPA+', 'Avg. total comp') +
       stat('Stealth', 'Always. No public profile') + stat('72 hrs', 'Avg. time to first introduction') +
