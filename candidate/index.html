@@ -1250,6 +1250,15 @@ function wire() {
     city.addEventListener('blur', function () { setTimeout(function () { menu.classList.remove('show'); }, 120); });
   }
 
+  // WhatsApp number: digits only, no letters, no symbols.
+  const phoneInput = document.getElementById('phone');
+  if (phoneInput) {
+    phoneInput.addEventListener('input', function () {
+      const digits = phoneInput.value.replace(/\D/g, '');
+      if (digits !== phoneInput.value) phoneInput.value = digits;
+    });
+  }
+
   // cash floor: typed, digits only, no up/down steppers. Synced into state
   // on every keystroke, not just at submit: any other question on this
   // page re-renders the whole screen on click, which would otherwise wipe
@@ -1476,8 +1485,9 @@ begin: function () { go('identity'); },
 
 'wa-start': async function () {
   const cc = document.getElementById('cc').value;
-  const num = val('phone').replace(/\s/g, '');
-  if (num.length < 8) return err('wa-err', 'That number looks short.');
+  const num = val('phone').replace(/\D/g, '');
+  if (cc === '+91' && num.length !== 10) return err('wa-err', 'That is not a 10-digit number.');
+  if (cc !== '+91' && num.length < 8) return err('wa-err', 'That number looks short.');
   S.contact.phone = cc + ' ' + num; save();
   if (!cfg('WHATSAPP')) {
     S.contact.verified = false;
