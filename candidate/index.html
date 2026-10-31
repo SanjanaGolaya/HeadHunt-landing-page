@@ -394,6 +394,19 @@ const API = {
     return data;
   },
 
+  // True only if this candidate came in on a peer-submitted referral
+  // that Sanjana has not approved yet. Her own direct invites and seed
+  // links never gate anyone.
+  async getRadarStatus() {
+    if (!sb) return false;
+    const user = await currentUser();
+    if (!user) return false;
+    const { data, error } = await sb.rpc('my_radar_status');
+    if (error) return false;
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? !!row.pending : false;
+  },
+
   // Has this person already been vouched for, by anyone, ever, either
   // under this exact email or under this LinkedIn with a different
   // email. RLS only lets a user read their own referrals, so this runs
@@ -502,6 +515,9 @@ const BLANK = {
 
 let S = load();
 let lastSavedIntent = null;
+// Checked once per page load, not re-fetched on every radar re-render
+// (clicking an intent card, saving, etc). null = not checked yet.
+let radarPending = null;
 
 // read before any history rewrite strips the query string
 const ENTRY_CODE = (function () {
@@ -1032,8 +1048,11 @@ radar: function () {
   return '<div class="page">' + topbar(esc(S.auth.email) + ' · stealth') +
     '<div class="split wide">' +
       '<div class="body">' +
-        '<h2 class="big">You\'re on<br>the radar.</h2>' +
-        '<p class="lede big">The mandatory bit is done. From here we only write when there is a named company and a role that matches your preferences exactly.</p>' +
+        (radarPending
+          ? '<h2 class="big">Your profile is<br>under review.</h2>' +
+            '<p class="lede big">The HeadHunt team is taking a look. We will let you know the moment you are confirmed.</p>'
+          : '<h2 class="big">You\'re on<br>the radar.</h2>' +
+            '<p class="lede big">The mandatory bit is done. From here we only write when there is a named company and a role that matches your preferences exactly.</p>') +
         '<button class="linkbtn mono tiny" data-act="go-terms">Edit your profile</button>' +
         '<div class="panel dark">' +
           '<p class="mono tiny">You now have</p>' +
@@ -1204,6 +1223,17 @@ function otpValue(wrapId) {
 }
 
 function wire() {
+  // Radar review status: checked once per page load, then re-renders
+  // the screen if it turns out to differ from the cached guess.
+  if (S.screen === 'radar' && radarPending === null) {
+    API.getRadarStatus().then(function (pending) {
+      if (pending !== radarPending) {
+        radarPending = pending;
+        if (S.screen === 'radar') render();
+      }
+    });
+  }
+
   // OTP typing behaviour
   ['emailotp', 'waotp'].forEach(function (id) {
     const w = document.getElementById(id);
