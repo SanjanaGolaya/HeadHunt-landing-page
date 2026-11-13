@@ -109,6 +109,10 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 
 .otp{display:flex;gap:12px;margin:0 0 20px}
 .cell{width:64px;height:76px;text-align:center;border:1px solid var(--line);border-radius:4px;background:#fff;font-family:inherit;font-size:34px;font-weight:700;color:var(--ink);outline:none}
+.otp{position:relative}
+.otp-in{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;font-size:16px;z-index:1;caret-color:transparent}
+.otp .cell{display:flex;align-items:center;justify-content:center;pointer-events:none}
+.otp .cell.on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,92,0,.14)}
 .cell:focus{border:1.5px solid var(--accent)}
 .row{display:flex;align-items:center}
 .row.gap{gap:20px}
@@ -192,9 +196,9 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .curtain{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--accent);color:#fff;transform:translateY(0);transition:transform 1100ms cubic-bezier(.76,0,.24,1)}
 .curtain.up{transform:translateY(-100%)}
 .curtainbody{flex-grow:1;display:flex;flex-direction:column;justify-content:center;padding:0 var(--gut)}
-.knock b{font-weight:700;color:inherit}
-.knock{margin:0 0 30px;max-width:940px;font-size:clamp(21px,3.4vw,40px);line-height:1.28}
-.knock.bold{margin:0;font-weight:700}
+.knock b{font-weight:600;color:inherit}
+.knock{margin:0 0 30px;max-width:940px;font-size:clamp(21px,3.4vw,40px);line-height:1.28;font-weight:300}
+.knock.bold{margin:0;font-weight:600}
 .curtainfoot{display:flex;align-items:center;justify-content:space-between;padding:0 var(--gut) 34px;color:rgba(255,255,255,.78);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase}
 
 .pulse{width:54px;height:54px;margin-bottom:26px;border-radius:50%;border:2px solid var(--accent);animation:pulse 1.4s ease-in-out infinite}
@@ -738,7 +742,7 @@ curtain: function () {
     '<div class="curtain" id="curtain">' +
       topbar(invited ? inviteLabel() : 'Invite only') +
       '<div class="curtainbody">' +
-        '<p class="knock">You\'re not actively applying, and we\'d never find you on a job board. But if the <b>right founder</b>, at the <b>right time</b>, building the <b>right thing</b> came knocking, you\'d listen.</p>' +
+        '<p class="knock">You\'re not actively applying and we\'d never find you circulating job boards. But if the <b>right founder</b> at the <b>right time</b>, building the <b>right thing</b> came knocking, you\'d listen.</p>' +
         '<p class="knock bold">This is that knock.</p>' +
       '</div>' +
       '<div class="curtainfoot"><span class="mono tiny">' + (invited ? 'Click anywhere to open' : 'Request an invite') + '</span>' +
@@ -1200,7 +1204,8 @@ function otpLength() {
 function otpBoxes(id) {
   const len = otpLength();
   let s = '<div class="otp" id="' + id + '">';
-  for (let i = 0; i < len; i++) s += '<input class="cell" inputmode="numeric" maxlength="1" data-i="' + i + '">';
+  s += '<input class="otp-in" id="' + id + '-in" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="' + len + '" aria-label="Login code">';
+  for (let i = 0; i < len; i++) s += '<span class="cell" data-i="' + i + '"></span>';
   return s + '</div>';
 }
 function tick() { return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'; }
@@ -1285,9 +1290,8 @@ function resumeScreenFromProfile(row) {
 }
 
 function otpValue(wrapId) {
-  const w = document.getElementById(wrapId);
-  if (!w) return '';
-  return [].slice.call(w.querySelectorAll('.cell')).map(function (c) { return c.value; }).join('');
+  const inp = document.getElementById(wrapId + '-in');
+  return inp ? inp.value.replace(/\D/g, '') : '';
 }
 
 function wire() {
@@ -1302,28 +1306,24 @@ function wire() {
     });
   }
 
-  // OTP typing behaviour
-  ['emailotp', 'waotp'].forEach(function (id) {
+  // OTP: one input receives the whole code (typing, paste, phone suggestion);
+  // the boxes only display it and move focus with the digits
+  ['emailotp', 'waotp', 'signinotp'].forEach(function (id) {
     const w = document.getElementById(id);
-    if (!w) return;
+    const inp = document.getElementById(id + '-in');
+    if (!w || !inp) return;
     const cells = [].slice.call(w.querySelectorAll('.cell'));
-    cells[0].focus();
-    cells.forEach(function (c, i) {
-      c.addEventListener('input', function () {
-        c.value = c.value.replace(/\D/g, '').slice(0, 1);
-        if (c.value && cells[i + 1]) cells[i + 1].focus();
+    const paint = function () {
+      const v = inp.value.replace(/\D/g, '').slice(0, cells.length);
+      if (v !== inp.value) inp.value = v;
+      cells.forEach(function (c, i) {
+        c.textContent = v[i] || '';
+        c.classList.toggle('on', i === v.length && v.length < cells.length);
       });
-      c.addEventListener('keydown', function (e) {
-        if (e.key === 'Backspace' && !c.value && cells[i - 1]) cells[i - 1].focus();
-      });
-      c.addEventListener('paste', function (e) {
-        const t = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, cells.length);
-        if (!t) return;
-        e.preventDefault();
-        t.split('').forEach(function (d, n) { if (cells[n]) cells[n].value = d; });
-        cells[Math.min(t.length, cells.length - 1)].focus();
-      });
-    });
+    };
+    inp.addEventListener('input', paint);
+    paint();
+    inp.focus();
   });
 
   // city typeahead
