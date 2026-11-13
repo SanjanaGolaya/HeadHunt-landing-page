@@ -25,12 +25,17 @@ body{font-family:'Source Serif 4',Georgia,'Times New Roman',serif;color:var(--in
 a{color:var(--accent);text-decoration:none;font-size:14px}
 a:hover{color:var(--accent2)}
 
-.bar{display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:0 var(--gut);background:var(--ink);color:#fff;flex-shrink:0}
-.bar .dim{color:#fff}
+.bar{display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:0 var(--gut);background:rgba(255,255,255,.8);-webkit-backdrop-filter:blur(14px) saturate(130%);backdrop-filter:blur(14px) saturate(130%);border-bottom:1px solid rgba(11,11,12,.08);color:var(--ink);flex-shrink:0;position:relative;z-index:5}
+.bar .dim{color:var(--muted)}
+.curtain .bar{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:0;color:#fff}
+.curtain .bar .dim{color:#fff}
+.curtainwrap > .page.hero > .bar{visibility:hidden}
+.curtain .rule{background:rgba(255,255,255,.35)}
+.curtain .brandsub{color:#fff}
 .brand{display:flex;align-items:baseline;gap:13px}
 .wordmark{font-size:21px;font-weight:700;line-height:1;letter-spacing:.1em;text-transform:uppercase}
-.rule{width:1px;height:16px;background:rgba(255,255,255,.35)}
-.brandsub{font-size:21px;font-weight:400;line-height:1;color:#fff;letter-spacing:.01em}
+.rule{width:1px;height:16px;background:rgba(11,11,12,.25)}
+.brandsub{font-size:21px;font-weight:400;line-height:1;color:var(--ink);letter-spacing:.01em}
 .linkbtn{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
 
 .steps{display:grid;grid-template-columns:repeat(4,1fr);background:var(--ground);border-bottom:1px solid var(--line);flex-shrink:0}
@@ -172,7 +177,6 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .curtainwrap{position:relative;width:100%;min-height:100dvh;overflow:hidden;cursor:pointer}
 .curtain{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--accent);color:#fff;transform:translateY(0);transition:transform 1100ms cubic-bezier(.76,0,.24,1)}
 .curtain.up{transform:translateY(-100%)}
-.curtain .bar{background:transparent}
 .curtainbody{flex-grow:1;display:flex;flex-direction:column;justify-content:center;padding:0 var(--gut)}
 .knock b{font-weight:700;color:inherit}
 .knock{margin:0 0 30px;max-width:940px;font-size:clamp(21px,3.4vw,40px);line-height:1.28}
