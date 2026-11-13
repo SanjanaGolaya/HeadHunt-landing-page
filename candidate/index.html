@@ -906,8 +906,10 @@ wanumber: function () {
       (cfg('WHATSAPP') ? '<p class="eyebrow">WhatsApp · step 1 of 2</p>' : '') +
       '<h2>Your WhatsApp number</h2>' +
       '<div class="phonerow">' +
-        '<select class="field short" id="cc"><option>+91</option><option>+1</option><option>+44</option><option>+65</option><option>+971</option></select>' +
-        '<input class="field" id="phone" inputmode="numeric" placeholder="98765 43210" value="' + esc(S.contact.phone) + '">' +
+        '<select class="field short" id="cc">' + ['+91', '+1', '+44', '+65', '+971'].map(function (c) {
+          return '<option' + (c === phoneParts().cc ? ' selected' : '') + '>' + c + '</option>';
+        }).join('') + '</select>' +
+        '<input class="field" id="phone" inputmode="numeric" placeholder="98765 43210" value="' + esc(phoneParts().num) + '">' +
       '</div>' +
       '<p class="err" id="wa-err"></p>' +
     '</div>' +
@@ -1196,6 +1198,13 @@ function heroInner() {
     '<p class="mono tiny dim">Private by design. No public profile, ever.</p></div></div>';
 }
 function stat(a, b) { return '<div class="stat"><p class="statnum">' + a + '</p><p class="mono tiny dim">' + b + '</p></div>'; }
+// Stored as "+91 9876543210". The dropdown owns the code, the box owns the digits.
+function phoneParts() {
+  const raw = String(S.contact.phone || '').trim();
+  const m = raw.match(/^(\+\d{1,4})\s*(.*)$/);
+  if (m) return { cc: m[1], num: m[2].replace(/\D/g, '') };
+  return { cc: '+91', num: raw.replace(/\D/g, '') };
+}
 function otpLength() {
   const n = parseInt(cfg('OTP_LENGTH'), 10);
   return (n >= 4 && n <= 10) ? n : 6;
@@ -1882,8 +1891,10 @@ window.addEventListener('hashchange', function () {
 // otherwise dead-end a legitimate, still-mid-flow candidate.
 const resuming = !!(ENTRY_CODE && S.inviteCode === ENTRY_CODE && S.screen && S.screen !== 'curtain' && S.screen !== 'checking');
 
+const forceSignin = !!(S.auth && S.auth.verified);
+if (forceSignin) { S.auth.verified = false; S.screen = 'signin'; save(); }
 const fromUrl = screenFromUrl();
-if (fromUrl && !resuming) S.screen = fromUrl;
+if (fromUrl && !resuming && !forceSignin) S.screen = fromUrl;
 S.screen = landableScreen(S.screen);
 render();
 history.replaceState({ screen: S.screen }, '', urlFor(S.screen));
@@ -1895,7 +1906,7 @@ function hasOAuth(){ return cfg('GOOGLE_SIGNIN') || cfg('APPLE_SIGNIN'); }
 (async function entry() {
   const code = ENTRY_CODE;
 
-  if (resuming) return;
+  if (resuming || forceSignin) return;
 
   if (code) {
     show('checking');
@@ -1941,7 +1952,7 @@ function hasOAuth(){ return cfg('GOOGLE_SIGNIN') || cfg('APPLE_SIGNIN'); }
 (async function(){
   if(!sb) return;
   const { data } = await sb.auth.getSession();
-  if(data && data.session && data.session.user && !S.auth.verified){
+  if(data && data.session && data.session.user && !S.auth.verified && S.screen !== 'signin' && S.screen !== 'signincode'){
     S.auth={email:data.session.user.email,provider:'oauth',verified:true};
     save();
     if(S.screen==='curtain'||S.screen==='identity'){
