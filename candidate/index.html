@@ -75,8 +75,8 @@ h2.big{font-size:clamp(34px,6vw,64px)}
 .tsec:first-child{margin-top:0}
 .tsec-h{margin:0 0 2px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
 .tsec-n{color:var(--accent);margin-right:12px}
-.enter{animation:hhReveal .62s cubic-bezier(.22,1,.36,1) both}
-@keyframes hhReveal{from{opacity:0;transform:translateY(-12px);clip-path:inset(0 0 100% 0)}to{opacity:1;transform:none;clip-path:inset(0 0 0 0)}}
+.enter{animation:hhMorph 1.3s cubic-bezier(.2,.8,.2,1) .18s both}
+@keyframes hhMorph{0%{opacity:0;transform:translateY(-34px) scale(.975);filter:blur(12px)}55%{opacity:1;filter:blur(2px)}100%{opacity:1;transform:none;filter:blur(0)}}
 .tprog{position:fixed;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:20;pointer-events:none}
 .tprog i{display:block;width:4px;height:34px;border-radius:3px;background:var(--line2);opacity:.4;transition:background .6s ease,opacity .6s ease,transform .6s cubic-bezier(.22,1,.36,1)}
 .tprog i.on{background:var(--accent);opacity:1;transform:scaleY(1.08)}
@@ -364,9 +364,10 @@ const API = {
   async saveProfile(state) {
     const t = state.terms;
     return upsert({
-      work_url: state.builder.url,
-      work_kind: state.builder.kind,
-      work_kind_other: state.builder.other,
+      work_url: state.builder.items[0].url,
+      work_kind: state.builder.items[0].kind,
+      work_kind_other: state.builder.items[0].other,
+      work_items: state.builder.items.filter(function (it) { return it.url || it.kind; }),
       paxel_url: state.builder.paxel,
       city: t.city,
       cash_floor: t.floor,
@@ -526,7 +527,7 @@ const BLANK = {
   linkedinUrl: '',
   found: null,
   removed: [],
-  builder: { url: '', kind: '', other: '', repoIsBest: '', paxel: '' },
+  builder: { items: [{ url: '', kind: '', other: '' }], repoIsBest: '', paxel: '' },
   terms: { i: 0, city: '', floor: '', swap: '', team: '', days: [], start: '', noticeWeeks: '', reloc: '', relocCities: [], industry: '', industries: [], industryOtherText: '', trial: [], note: '' },
   intent: 'open',
   vouches: []
@@ -591,6 +592,8 @@ function load() {
       if (merged.terms.start !== 'now' && merged.terms.start !== 'notice') merged.terms.start = '';
       if (typeof merged.terms.days === 'string') merged.terms.days = merged.terms.days ? [merged.terms.days] : [];
       if (!Array.isArray(merged.terms.days)) merged.terms.days = [];
+      if (saved.builder && !Array.isArray(saved.builder.items)) merged.builder.items = [{ url: saved.builder.url || '', kind: saved.builder.kind || '', other: saved.builder.other || '' }];
+      if (!merged.builder.items.length) merged.builder.items = [{ url: '', kind: '', other: '' }];
       return merged;
     }
   } catch (e) { /* private mode, blocked storage */ }
@@ -665,6 +668,7 @@ const SECTIONS = [
     complete: function (t) { return !!t.industry && (t.industry !== 'some' || t.industries.length > 0) && t.trial.length > 0; } }
 ];
 let termsSeen = null;
+let builderSeen = null;
 function paintProgress() {
   const bars = document.querySelectorAll('.tprog i');
   SECTIONS.forEach(function (sec, i) { if (bars[i]) bars[i].classList.toggle('on', sec.complete(S.terms)); });
@@ -980,22 +984,33 @@ found: function () {
 builder: function () {
   const b = S.builder;
   const kinds = [['gh', 'GitHub'], ['live', 'Something live'], ['writing', 'Writing'], ['paper', 'Paper'], ['hf', 'Hugging Face'], ['other', 'Other']];
+  if (builderSeen === null) builderSeen = b.items.length;
+  const cards = b.items.map(function (it, i) {
+    const anim = i >= builderSeen ? ' enter' : '';
+    return '<div class="panel bitem' + anim + '">' +
+      '<div class="rowsplit"><p class="fname">Project ' + (i + 1) + '</p>' +
+      (i > 0 ? '<button class="linkbtn mono tiny" data-act="item-remove" data-i="' + i + '">Remove</button>' : '') + '</div>' +
+      '<input class="field wide" id="burl-' + i + '" placeholder="https://" value="' + esc(it.url) + '">' +
+      '<p class="lbl mt">What is it? <span class="mono tiny dim">Optional</span></p>' +
+      '<div class="chips">' + kinds.map(function (k) {
+        return '<button class="chip ' + (it.kind === k[0] ? 'on' : '') + '" data-act="kind" data-i="' + i + '" data-id="' + k[0] + '">' + k[1] + '</button>';
+      }).join('') + '</div>' +
+      (it.kind === 'other' ? '<input class="field mt-sm" id="bother-' + i + '" placeholder="A firmware rewrite, a dataset, a Figma plugin" value="' + esc(it.other) + '">' : '') +
+      '</div>';
+  }).join('');
+  builderSeen = b.items.length;
   return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(2) +
     '<div class="body">' +
       '<p class="eyebrow">Show us who you are as a builder</p>' +
       '<h2>The best thing you\'ve built.</h2>' +
-      '<p class="lede">A repo, a product that\'s live, a paper, or a post about something that broke.</p>' +
-      '<input class="field wide" id="burl" placeholder="https://" value="' + esc(b.url) + '">' +
-      '<p class="lbl mt">What is it? <span class="mono tiny dim">Optional</span></p>' +
-      '<div class="chips">' + kinds.map(function (k) {
-        return '<button class="chip ' + (b.kind === k[0] ? 'on' : '') + '" data-act="kind" data-id="' + k[0] + '">' + k[1] + '</button>';
-      }).join('') + '</div>' +
-      (b.kind === 'other' ? '<div class="sub"><label class="lbl">In your words, what is it?</label><input class="field" id="bother" placeholder="A firmware rewrite, a dataset, a Figma plugin" value="' + esc(b.other) + '"></div>' : '') +
+      '<p class="lede">A repo, a product that\'s live, a paper, or a post about something that broke. Add as many as you like.</p>' +
+      cards +
+      (b.items.length < 5 ? '<button class="ghost mt" data-act="item-add"><span>+ Add another</span></button>' : '') +
       '<div class="panel mt">' +
         '<div class="rowsplit"><p class="fname">Paxel profile <span class="mono tiny dim">Optional</span></p>' +
         '<a href="https://paxel.ycombinator.com/" target="_blank" rel="noopener noreferrer">What Paxel is ↗</a></div>' +
         '<p class="fine">Y Combinator\'s profile for engineers. If you have taken it, paste the link to your results. It gives us your work in your own words.</p>' +
-        '<input class="field wide" id="paxel" inputmode="url" placeholder="https://paxel.ycombinator.com/results/\u2026" value="' + esc(b.paxel) + '">' +
+        '<input class="field wide" id="paxel" inputmode="url" placeholder="https://paxel.ycombinator.com/results/…" value="' + esc(b.paxel) + '">' +
       '</div>' +
       '<p class="err" id="b-err"></p>' +
     '</div>' +
@@ -1198,6 +1213,7 @@ function aLogo() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill=
 function render() {
   const el = document.getElementById('screen');
   if (S.screen !== 'terms') termsSeen = null;
+  if (S.screen !== 'builder') builderSeen = null;
   el.innerHTML = (VIEWS[S.screen] || VIEWS.curtain)();
   wire();
 }
@@ -1234,9 +1250,8 @@ function hydrateFromRow(row) {
   S.linkedinUrl = row.linkedin_url || '';
   S.consent.profile = !!row.consent_profile;
   S.consent.signalmap = !!row.consent_signalmap;
-  S.builder.url = row.work_url || '';
-  S.builder.kind = row.work_kind || '';
-  S.builder.other = row.work_kind_other || '';
+  S.builder.items = Array.isArray(row.work_items) && row.work_items.length ? row.work_items
+    : [{ url: row.work_url || '', kind: row.work_kind || '', other: row.work_kind_other || '' }];
   S.builder.paxel = row.paxel_url || '';
   if (row.city) {
     S.terms.city = row.city;
@@ -1343,6 +1358,16 @@ function wire() {
       if (v) { S.terms.city = v; save(); }
     });
   }
+
+  document.querySelectorAll('[id^="burl-"], [id^="bother-"]').forEach(function (el) {
+    el.addEventListener('input', function () {
+      const isUrl = el.id.indexOf('burl-') === 0;
+      const i = Number(el.id.split('-')[1]);
+      if (!S.builder.items[i]) return;
+      S.builder.items[i][isUrl ? 'url' : 'other'] = el.value.trim();
+      save();
+    });
+  });
 
   // WhatsApp number: digits only, no letters, no symbols.
   const phoneInput = document.getElementById('phone');
@@ -1456,6 +1481,15 @@ document.addEventListener('click', function (e) {
   if (t.tagName === 'A') e.preventDefault();
   ACTIONS[act] && ACTIONS[act](t, e);
 });
+
+function syncBuilderItems() {
+  S.builder.items.forEach(function (it, i) {
+    const u = document.getElementById('burl-' + i);
+    if (u) it.url = u.value.trim();
+    const o = document.getElementById('bother-' + i);
+    if (o) it.other = o.value.trim();
+  });
+}
 
 const ACTIONS = {
 
@@ -1639,15 +1673,24 @@ undo: function () { S.removed = []; save(); render(); },
 'found-next': function () { go('builder'); },
 
 kind: function (t) {
-  const u = document.getElementById('burl');
-  if (u) S.builder.url = u.value.trim();
-  S.builder.kind = t.dataset.id; save(); render();
+  syncBuilderItems();
+  S.builder.items[Number(t.dataset.i)].kind = t.dataset.id;
+  save(); render();
+},
+'item-add': function () {
+  syncBuilderItems();
+  if (S.builder.items.length < 5) S.builder.items.push({ url: '', kind: '', other: '' });
+  save(); render();
+},
+'item-remove': function (t) {
+  syncBuilderItems();
+  S.builder.items.splice(Number(t.dataset.i), 1);
+  if (!S.builder.items.length) S.builder.items.push({ url: '', kind: '', other: '' });
+  save(); render();
 },
 
 'builder-next': function () {
-  const u = val('burl');
-  S.builder.url = u;
-  if (S.builder.kind === 'other') S.builder.other = val('bother');
+  syncBuilderItems();
   const px = val('paxel').trim();
   if (px && !okPaxel(px)) return err('b-err', 'That is not a Paxel results link. It looks like paxel.ycombinator.com/results/\u2026');
   S.builder.paxel = px;
