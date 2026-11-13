@@ -96,6 +96,56 @@ const PLACEHOLDER = [
 ];
 
 const POSTS = {
+  "ai-recruitment-landscape": {
+    title: "How AI is changing the recruitment landscape",
+    standfirst: "A 2026 review of the research found that AI does most of its work at the top of the hiring funnel. The harder questions, like fit and future performance, are where it is least proven.",
+    date: "November 2026",
+    readTime: "6 min read",
+    placeholder: false,
+    body: [
+      P("Every recruiting tool now says it uses AI, and it is hard to tell what that means in practice. So we read the research. A team at the University of Seville published a systematic review in Discover Artificial Intelligence this year, covering work from 2020 to February 2025. They started with more than 1,400 papers and kept 22 that described a working application, not just a proposal. Across those 22 they found 40 distinct models and tools, applied to 20 different recruiting tasks."),
+      P("It is a young field. No author and no institution appears twice in the final set, and India and the United States lead on output. The review reads more like a map of what is being tried than a verdict on what works. Even so, the map says something specific about where AI is strong and where it is not."),
+
+      H("Most of the work sits at the top of the funnel"),
+      P("The review tallied which hiring tasks the studies tackled. Candidate pre-screening came up eight times, interview evaluation six, and CV analysis five. Soft skills assessment appeared three times, and predicting whether a candidate will suit the role only twice."),
+      P("That is a fair picture of where the effort has gone. Reading and sorting CVs is a matching problem, and machines are good at matching. Models built on language techniques such as BERT can compare a résumé with a job description and rank it in seconds. One study in the review reported accuracy of 96 to 100 percent on CV classification, and the authors treat this as the most mature use of AI in hiring. They point to employers like Unilever and POSCO as examples of it working alongside human evaluation."),
+      P("The authors add a caution. Accuracy figures from controlled settings can drop in real hiring, where résumés arrive in every format and language and the data is noisier."),
+
+      H("The same tools tend to favour people who look like past hires"),
+      P("Several studies in the review raise one concern. Models that score résumés on language similarity tend to favour CVs that use the same terms and structure as people who were hired before. Models trained on limited data can leave out atypical profiles and unconventional career paths. One study found that outdated data makes predictions worse."),
+      P("For a founder this matters more than it sounds. If the person you need has an unusual background, a system tuned to resemble past hires is more likely to rank them low."),
+      Q("A model trained on the people you hired before will keep finding more of them."),
+
+      H("Judging fit is still the weak spot"),
+      P("The tasks that matter most to a small team are the ones the research supports least. Several tools claim to assess soft skills from video interviews, games or text. The review finds this work promising but early. One model reached 98 percent accuracy at classifying personality traits, yet it depended on the quality of its input data and the authors flag that it lacks transparency. They also note that the behaviours AI picks up do not always reflect real or sustained job performance, and that no long-term studies have checked whether the predictions hold."),
+      P("Generative AI sits even earlier on the curve. The review places tools like ChatGPT at the exploratory stage for hiring and lists bias, a lack of emotional intelligence and hallucinations among the problems. Facial and emotion analysis in interviews falls in the same bracket."),
+      P("There is a human side to this as well. In one of the studies covered, HR evaluators rated candidates chosen by AI lower than candidates chosen through traditional screening. Another found that recruiters split into two camps: some distrust algorithmic recommendations on principle, and others accept them without question. Neither is a good basis for a hire."),
+
+      H("What candidates make of it"),
+      P("Chatbots and automated interviews change the candidate side too. They reply quickly at any hour. In one scholarship programme, 73 percent of respondents had used the chatbot and 84 percent said they found what they were looking for. Automated interviews can also feel impersonal, and candidates may come away trusting the process less. The authors caution that a result from a scholarship programme cannot be assumed to carry over to executive hiring."),
+      P("For a founder this is a real cost. The people you most want to hire are also judging how you treat them."),
+
+      H("The rules are tightening"),
+      P("Regulators have noticed. The EU AI Act classes AI used in recruitment, promotion or dismissal as high risk. Companies using such systems take on obligations that include risk management, record keeping and human oversight. GDPR separately protects people from decisions made purely by automated means. If you hire in Europe, or for a European company, the tools you pick are now part of your compliance picture."),
+
+      H("Where the research lands"),
+      P("The authors conclude that AI should augment recruiters, not replace them. The model they describe is simple. Let software handle the large volume of data in the early stages, and let a person assess skills and make the final call. They describe the recruiter's job moving from collecting data to interpreting it."),
+
+      H("What this means if you are hiring your first ten people"),
+      P("Read this way, the research matches what we hear from founders. The tools have made it cheap to produce candidates. They have not made it cheaper to know which candidate is right. The pile gets bigger and the sorting falls back on you."),
+      P("An early-stage hire is close to the worst case for a pattern-matching system. There is little hiring history to learn from, the role is often new, and the qualities that decide success, such as product sense, pace and how someone works in a small team, are the ones the review rates as least proven."),
+      P("If you are evaluating a tool or an agency, a few questions are worth asking:"),
+      LI("What data does the system learn from, and how old is it?"),
+      LI("Can they explain why a candidate was ranked where they were?"),
+      LI("Who reads the shortlist before it reaches you, and what do they know about your product?"),
+      LI("What happens to a candidate whose CV does not look like the job description?"),
+      P("At HeadHunt we start with an hour with the founder, interview every candidate ourselves on both the technical and the human side, and send you the two or three people worth meeting. Software can widen the search and shorten the list. Deciding who fits your team is still a person's job."),
+
+      H("A note on the evidence"),
+      P("Two limits are worth keeping in mind. The review only covered papers indexed in Scopus up to February 2025, in English and Spanish, and recruiting tools have moved quickly since. And nine of the 22 studies were primarily theoretical, proposing models that had not been tested in a real hiring setting. Treat the review as a guide to the questions to ask, not a ranking of products."),
+      P("Source: Antonio González-Morales, M. Milagro Martín-López and Fernando Góngora-Larequi, “A systematic review and descriptive analysis of artificial intelligence applied to recruitment and personnel selection in the present and possible future,” Discover Artificial Intelligence 6, 762 (2026), https://doi.org/10.1007/s44163-026-01488-6. The paper is open access under a CC BY-NC-ND 4.0 licence. This article is our own commentary and does not reproduce its figures or tables."),
+    ],
+  },
   "latent-career-optionality": {
     title: "Latent Career Optionality",
     standfirst: "Careers used to be ladders. What replaced them looks more like a jungle gym — and the safety net is no longer stability, it is having options.",
