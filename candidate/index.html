@@ -70,6 +70,18 @@ h2.big{font-size:clamp(34px,6vw,64px)}
 .mt-sm{margin-top:14px}
 .err{margin:10px 0 0;min-height:18px;font-size:14px;color:#a63e1c}
 .grey{color:var(--line2)}
+.tsecs{padding-right:34px}
+.tsec{margin-top:34px}
+.tsec:first-child{margin-top:0}
+.tsec-h{margin:0 0 2px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.tsec-n{color:var(--accent);margin-right:12px}
+.enter{animation:hhReveal .62s cubic-bezier(.22,1,.36,1) both}
+@keyframes hhReveal{from{opacity:0;transform:translateY(-12px);clip-path:inset(0 0 100% 0)}to{opacity:1;transform:none;clip-path:inset(0 0 0 0)}}
+.tprog{position:fixed;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:20;pointer-events:none}
+.tprog i{display:block;width:4px;height:34px;border-radius:3px;background:var(--line2);opacity:.4;transition:background .6s ease,opacity .6s ease,transform .6s cubic-bezier(.22,1,.36,1)}
+.tprog i.on{background:var(--accent);opacity:1;transform:scaleY(1.08)}
+@media (max-width:720px){.tprog{right:8px}.tprog i{height:22px;width:3px}.tsecs{padding-right:18px}}
+@media (prefers-reduced-motion:reduce){.enter{animation:none}}
 
 .field{width:100%;max-width:520px;padding:0 16px;min-height:54px;border:1px solid var(--line2);border-radius:4px;background:#fff;font-family:inherit;font-size:16px;color:var(--ink);outline:none}
 .field:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(255,92,0,.14)}
@@ -360,7 +372,8 @@ const API = {
       cash_floor: t.floor,
       cash_to_equity: t.swap,
       team_size: t.team,
-      office_days: t.days,
+      office_days: t.days.join(', '),
+      office_modes: t.days,
       earliest_start: t.start,
       notice_weeks: t.start === 'notice' ? t.noticeWeeks : null,
       relocation: t.reloc,
@@ -514,7 +527,7 @@ const BLANK = {
   found: null,
   removed: [],
   builder: { url: '', kind: '', other: '', repoIsBest: '', paxel: '' },
-  terms: { i: 0, city: '', floor: 48, swap: '', team: '', days: '', start: '', noticeWeeks: '', reloc: '', relocCities: [], industry: '', industries: [], industryOtherText: '', trial: [], note: '' },
+  terms: { i: 0, city: '', floor: '', swap: '', team: '', days: [], start: '', noticeWeeks: '', reloc: '', relocCities: [], industry: '', industries: [], industryOtherText: '', trial: [], note: '' },
   intent: 'open',
   vouches: []
 };
@@ -572,9 +585,12 @@ function load() {
       // "reloc" dropped its old "right" (for the right one) option: a
       // stale shape here would crash the multi-select toggle rather than
       // just render as unanswered, so normalize rather than merge blind.
+      if (typeof merged.terms.trial === 'string') merged.terms.trial = merged.terms.trial ? [merged.terms.trial] : [];
       if (!Array.isArray(merged.terms.trial)) merged.terms.trial = [];
       if (merged.terms.reloc !== 'no' && merged.terms.reloc !== 'yes') merged.terms.reloc = '';
       if (merged.terms.start !== 'now' && merged.terms.start !== 'notice') merged.terms.start = '';
+      if (typeof merged.terms.days === 'string') merged.terms.days = merged.terms.days ? [merged.terms.days] : [];
+      if (!Array.isArray(merged.terms.days)) merged.terms.days = [];
       return merged;
     }
   } catch (e) { /* private mode, blocked storage */ }
@@ -625,10 +641,10 @@ const QUESTIONS = [
     options: [['no', 'No'], ['yes', 'Yes']] },
   { key: 'floor', short: 'Cash floor', title: 'The number below which it is a no.', help: 'Fixed cash, excluding equity. We never show this to a founder.', type: 'money' },
   { key: 'swap', short: 'Cash to equity', title: 'Would you take a pay cut for an equity buy-in?', help: 'There is no wrong answer.', type: 'pick',
-    options: [['buyin', "I'd prefer a buy-in with a startup that's growing rapidly"], ['open', "I'm open to the offer"], ['cash', "I'm focused on just a good fixed cash base right now"]] },
+    options: [['buyin', "I'd prefer an equal split between cash and equity with an early-stage team right now."], ['open', "I'm open to the offer"], ['cash', "I'm focused on a fixed cash base right now"]] },
   { key: 'team', short: 'Team size', title: 'How big is the engineering team you want to join?', help: '', type: 'pick',
     options: [['0', 'Zero, I want to be the first'], ['1-5', '1 to 5'], ['5-15', '5 to 15'], ['15+', '15+']] },
-  { key: 'days', short: 'Office days', title: 'How many days in office?', help: 'Six-day weeks exist in this market.', type: 'pick',
+  { key: 'days', short: 'Office days', title: 'How many days in office?', help: 'Six-day weeks exist in this market. Pick every one you would accept.', type: 'multipick',
     options: [['0', 'Fully remote'], ['hybrid', 'Hybrid'], ['5', '5 days'], ['6', "I'm okay with 996 culture"]] },
   { key: 'start', short: 'Earliest start', title: 'How soon could you start?', help: '', type: 'pick',
     options: [['now', 'Immediately'], ['notice', 'I need to serve a notice period']] },
@@ -637,6 +653,22 @@ const QUESTIONS = [
   { key: 'trial', short: 'Interview steps', title: 'Which interview steps are you okay with?', help: 'Choose all that apply.', type: 'multipick',
     options: [['intro', 'Intro plus a technical interview'], ['takehome', 'A take-home assignment'], ['paid', 'A paid trial, 3 to 5 days'], ['week', 'A full week work trial'], ['month', 'A co-work month']] }
 ];
+
+const SECTIONS = [
+  { title: 'Where you live', keys: ['city', 'reloc'],
+    complete: function (t) { return !!t.city && !!t.reloc && (t.reloc !== 'yes' || t.relocCities.length > 0); } },
+  { title: "What you'd take", keys: ['floor', 'swap'],
+    complete: function (t) { return !!t.floor && !!t.swap; } },
+  { title: 'How you work', keys: ['team', 'days', 'start'],
+    complete: function (t) { return !!t.team && t.days.length > 0 && !!t.start && (t.start !== 'notice' || !!t.noticeWeeks); } },
+  { title: "What you're looking for", keys: ['industry', 'trial', 'note'],
+    complete: function (t) { return !!t.industry && (t.industry !== 'some' || t.industries.length > 0) && t.trial.length > 0; } }
+];
+let termsSeen = null;
+function paintProgress() {
+  const bars = document.querySelectorAll('.tprog i');
+  SECTIONS.forEach(function (sec, i) { if (bars[i]) bars[i].classList.toggle('on', sec.complete(S.terms)); });
+}
 
 function answerOf(q) {
   const v = S.terms[q.key];
@@ -662,7 +694,7 @@ function topbar(right) {
   '</div>';
 }
 
-const STEPS = ['Identity', 'Connect', 'Builder', 'Your terms'];
+const STEPS = ['Identity', 'Connect', 'How You Build', 'Your terms'];
 const STEP_SCREENS = ['identity', 'connect', 'builder', 'terms'];
 function stepper(active) {
   return '<div class="steps">' + STEPS.map(function (s, i) {
@@ -973,10 +1005,22 @@ builder: function () {
 
 terms: function () {
   const t = S.terms;
-  const row = function (q, control) {
-    return '<div class="qrow" id="row-' + q.key + '">' +
-      '<div class="qlab"><p class="qt">' + q.title.replace(/\?$/, '') + '</p>' + (q.help ? '<p class="qh">' + q.help + '</p>' : '') + '</div>' +
-      '<div class="qctl">' + control + '</div></div>';
+  const done = SECTIONS.map(function (sec) { return sec.complete(t); });
+  const open = [];
+  for (let i = 0; i < SECTIONS.length; i++) open.push(i === 0 || (open[i - 1] && done[i - 1]));
+  const rowVisible = function (k) { return k !== 'reloc' || !!t.city; };
+  if (termsSeen === null) {
+    termsSeen = new Set();
+    SECTIONS.forEach(function (sec, i) {
+      if (!open[i]) return;
+      termsSeen.add('sec-' + i);
+      sec.keys.forEach(function (k) { if (rowVisible(k)) termsSeen.add('row-' + k); });
+    });
+  }
+  const enter = function (key) {
+    if (termsSeen.has(key)) return '';
+    termsSeen.add(key);
+    return ' enter';
   };
   const chips = function (q) {
     return '<div class="chips">' + q.options.map(function (o) {
@@ -988,57 +1032,59 @@ terms: function () {
       return '<button class="chip sm ' + (t[q.key].indexOf(o[0]) > -1 ? 'on' : '') + '" data-act="multipick" data-key="' + q.key + '" data-id="' + o[0] + '">' + o[1] + '</button>';
     }).join('') + '</div>';
   };
-
-  const rows = QUESTIONS.map(function (q) {
-    if (q.type === 'city') {
-      return row(q, '<div class="combo"><input class="field slim" id="city" placeholder="Start typing a city" autocomplete="off" value="' + esc(t.city) + '">' +
-        '<div class="menu" id="citymenu"></div></div>');
-    }
-    if (q.type === 'money') {
-      return row(q, '<div class="moneyrow slim"><span>₹</span>' +
-        '<input class="field slim" id="floorinput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="' + t.floor + '">' +
-        '<span>LPA</span></div>');
-    }
-    if (q.type === 'multipick') {
-      return row(q, multiChips(q));
-    }
-    let c = chips(q);
-    if (q.key === 'industry' && t.industry === 'some') {
-      c += '<div class="chips tight">' + INDUSTRIES.concat(['Other']).map(function (n) {
-        return '<button class="chip xs ' + (t.industries.indexOf(n) > -1 ? 'on' : '') + '" data-act="ind" data-n="' + n + '">' + n + '</button>';
-      }).join('') + '</div>';
-      if (t.industries.indexOf('Other') > -1) {
-        c += '<input class="field slim" id="industryOther" placeholder="Which one?" autocomplete="off" value="' + esc(t.industryOtherText) + '">';
-      }
-    }
-    if (q.key === 'reloc' && t.reloc === 'yes') {
-      c += '<div class="combo"><input class="field slim" id="relocCityInput" placeholder="Type any city, pick a match or press Enter to add it" autocomplete="off">' +
-        '<div class="menu" id="relocCityMenu"></div></div>' +
+  const findQ = function (k) { return QUESTIONS.filter(function (x) { return x.key === k; })[0]; };
+  const control = function (k) {
+    if (k === 'city') return '<div class="combo"><input class="field slim" id="city" placeholder="Start typing a city" autocomplete="off" value="' + esc(t.city) + '"><div class="menu" id="citymenu"></div></div>';
+    if (k === 'floor') return '<div class="moneyrow slim"><span>₹</span><input class="field slim" id="floorinput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="e.g. 48" value="' + (t.floor || '') + '"><span>LPA</span></div>';
+    if (k === 'days' || k === 'trial') return multiChips(findQ(k));
+    if (k === 'reloc') return chips(findQ(k)) + (t.reloc === 'yes'
+      ? '<div class="combo"><input class="field slim" id="relocCityInput" placeholder="Type any city, pick a match or press Enter to add it" autocomplete="off"><div class="menu" id="relocCityMenu"></div></div>' +
         (t.relocCities.length ? '<div class="chips tight">' + t.relocCities.map(function (n) {
           return '<button class="chip xs on" data-act="relocCityRemove" data-city="' + esc(n) + '">' + esc(n) + ' ×</button>';
-        }).join('') + '</div>' : '');
+        }).join('') + '</div>' : '')
+      : '');
+    if (k === 'start') return chips(findQ(k)) + (t.start === 'notice'
+      ? '<div class="moneyrow slim"><input class="field slim" id="noticeweeks" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="e.g. 4" value="' + (t.noticeWeeks || '') + '"><span>weeks</span></div>'
+      : '');
+    if (k === 'industry') return chips(findQ(k)) + (t.industry === 'some'
+      ? '<div class="chips tight">' + INDUSTRIES.concat(['Other']).map(function (n) {
+          return '<button class="chip xs ' + (t.industries.indexOf(n) > -1 ? 'on' : '') + '" data-act="ind" data-n="' + n + '">' + n + '</button>';
+        }).join('') + '</div>' +
+        (t.industries.indexOf('Other') > -1 ? '<input class="field slim" id="industryOther" placeholder="Which one?" autocomplete="off" value="' + esc(t.industryOtherText) + '">' : '')
+      : '');
+    return chips(findQ(k));
+  };
+  const rowHtml = function (k, cls) {
+    if (k === 'note') {
+      const words = t.note ? t.note.trim().split(/\s+/).filter(Boolean).length : 0;
+      return '<div class="panel mt' + cls + '"><p class="fname">What are you actually looking for? <span class="accenttext">Highly recommended</span></p>' +
+        '<p class="fine">In your own words, what and why. The more specific, the better we can go find it.</p>' +
+        '<textarea class="field area" id="tnote" rows="6" placeholder="What you want next, and why.">' + esc(t.note) + '</textarea>' +
+        '<p class="mono tiny dim" id="tnote-count">' + words + ' / 1000 words</p></div>';
     }
-    if (q.key === 'start' && t.start === 'notice') {
-      c += '<div class="moneyrow slim"><input class="field slim" id="noticeweeks" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="e.g. 4" value="' + (t.noticeWeeks || '') + '"><span>weeks</span></div>';
-    }
-    return row(q, c);
+    const q = findQ(k);
+    return '<div class="qrow' + cls + '" id="row-' + k + '"><div class="qlab"><p class="qt">' + q.title.replace(/\?$/, '') + '</p>' +
+      (q.help ? '<p class="qh">' + q.help + '</p>' : '') + '</div><div class="qctl">' + control(k) + '</div></div>';
+  };
+  const body = SECTIONS.map(function (sec, i) {
+    if (!open[i]) return '';
+    const secCls = enter('sec-' + i);
+    const rows = sec.keys.filter(rowVisible).map(function (k) {
+      let cls = '';
+      if (secCls) termsSeen.add('row-' + k); else cls = enter('row-' + k);
+      return rowHtml(k, cls);
+    }).join('');
+    return '<section class="tsec' + secCls + '"><p class="tsec-h"><span class="tsec-n">0' + (i + 1) + '</span>' + sec.title + '</p>' + rows + '</section>';
   }).join('');
-
+  const bars = done.map(function (d) { return '<i class="' + (d ? 'on' : '') + '"></i>'; }).join('');
   return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(3) +
     '<div class="body tight">' +
-      '<div class="headline">' +
-        '<div><h2>Where you\'d actually join.</h2></div>' +
-        '<span class="mono tiny dim">Private · never shown to founders</span>' +
-      '</div>' +
-      '<div class="qlist">' + rows + '</div>' +
-      '<div class="panel mt">' +
-        '<p class="fname">What are you actually looking for? <span class="accenttext">Optional</span></p>' +
-        '<p class="fine">In your own words, what and why. The more specific, the better we can go find it.</p>' +
-        '<textarea class="field area" id="tnote" rows="4" placeholder="What you want next, and why.">' + esc(t.note) + '</textarea>' +
-        '<p class="mono tiny dim" id="tnote-count">0 / 500 words</p>' +
-      '</div>' +
+      '<div class="headline"><div><h2>Where you\'d actually join.</h2></div>' +
+      '<span class="mono tiny dim">Private · never shown to founders</span></div>' +
+      '<div class="tsecs">' + body + '</div>' +
       '<p class="err" id="t-err"></p>' +
     '</div>' +
+    '<div class="tprog" aria-hidden="true">' + bars + '</div>' +
     footer('<span class="fine">Change any of these later. We check them again before any introduction.</span>',
       { label: 'Submit my terms', act: 'terms-submit' }) +
   '</div>';
@@ -1151,6 +1197,7 @@ function aLogo() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill=
 
 function render() {
   const el = document.getElementById('screen');
+  if (S.screen !== 'terms') termsSeen = null;
   el.innerHTML = (VIEWS[S.screen] || VIEWS.curtain)();
   wire();
 }
@@ -1196,7 +1243,7 @@ function hydrateFromRow(row) {
     S.terms.floor = row.cash_floor || S.terms.floor;
     S.terms.swap = row.cash_to_equity || '';
     S.terms.team = row.team_size || '';
-    S.terms.days = row.office_days || '';
+    S.terms.days = Array.isArray(row.office_modes) ? row.office_modes : (row.office_days ? String(row.office_days).split(', ') : []);
     S.terms.start = row.earliest_start || '';
     S.terms.noticeWeeks = row.notice_weeks || '';
     S.terms.reloc = row.relocation || '';
@@ -1283,7 +1330,18 @@ function wire() {
       S.terms.city = mi.dataset.city;
       save(); render();
     });
-    city.addEventListener('blur', function () { setTimeout(function () { menu.classList.remove('show'); }, 120); });
+    city.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const first = menu.querySelector('.mi');
+      S.terms.city = first ? first.dataset.city : city.value.trim();
+      if (S.terms.city) { save(); render(); }
+    });
+    city.addEventListener('blur', function () {
+      setTimeout(function () { menu.classList.remove('show'); }, 120);
+      const v = city.value.trim();
+      if (v) { S.terms.city = v; save(); }
+    });
   }
 
   // WhatsApp number: digits only, no letters, no symbols.
@@ -1304,7 +1362,7 @@ function wire() {
     floorInput.addEventListener('input', function () {
       const digits = floorInput.value.replace(/\D/g, '');
       if (digits !== floorInput.value) floorInput.value = digits;
-      if (digits) { S.terms.floor = parseInt(digits, 10); save(); }
+      S.terms.floor = digits ? parseInt(digits, 10) : ''; save(); paintProgress();
     });
   }
 
@@ -1315,7 +1373,7 @@ function wire() {
       const digits = noticeInput.value.replace(/\D/g, '');
       if (digits !== noticeInput.value) noticeInput.value = digits;
       S.terms.noticeWeeks = digits ? parseInt(digits, 10) : '';
-      save();
+      save(); paintProgress();
     });
   }
 
@@ -1380,11 +1438,11 @@ function wire() {
     const noteCount = document.getElementById('tnote-count');
     const update = function () {
       let words = noteEl.value.trim().split(/\s+/).filter(Boolean);
-      if (words.length > 500) {
-        words = words.slice(0, 500);
+      if (words.length > 1000) {
+        words = words.slice(0, 1000);
         noteEl.value = words.join(' ');
       }
-      if (noteCount) noteCount.textContent = words.length + ' / 500 words';
+      if (noteCount) noteCount.textContent = words.length + ' / 1000 words';
     };
     noteEl.addEventListener('input', update);
     update();
@@ -1628,7 +1686,7 @@ multipick: function (t) {
     else S.terms.industries.splice(otherIdx, 1);
   }
   const missing = QUESTIONS.filter(function (q) {
-    if (q.type === 'money') return false;
+    if (q.type === 'money') return !S.terms.floor;
     if (q.type === 'city') return !S.terms.city;
     if (q.type === 'multipick') return !S.terms[q.key].length;
     return !S.terms[q.key];
@@ -1642,7 +1700,7 @@ multipick: function (t) {
   if (S.terms.reloc === 'yes' && !S.terms.relocCities.length) return err('t-err', 'Add at least one city you would move to.');
   if (S.terms.start === 'notice' && !S.terms.noticeWeeks) return err('t-err', 'Tell us how many weeks notice you need.');
   let noteWords = val('tnote').split(/\s+/).filter(Boolean);
-  if (noteWords.length > 500) noteWords = noteWords.slice(0, 500);
+  if (noteWords.length > 1000) noteWords = noteWords.slice(0, 1000);
   S.terms.note = noteWords.join(' ');
   err('t-err', '');
   busy('terms-submit', true, 'Sending…');
