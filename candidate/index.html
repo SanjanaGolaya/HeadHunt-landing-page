@@ -72,18 +72,13 @@ h2.big{font-size:clamp(34px,6vw,64px)}
 .grey{color:var(--line2)}
 .tsecs{padding-right:34px}
 .tsec{margin-top:34px;scroll-margin-top:28px}
-.tickin{position:relative}
-.tickin .field{padding-right:54px}
-.tickin .tick{position:absolute;right:8px;top:50%;transform:translateY(-50%)}
-.tick{width:36px;height:36px;border:0;border-radius:4px;background:#E6E8EB;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
-.tick.on{background:var(--accent)}
 .note-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px}
-.note-foot .tick{width:40px;height:34px}
 .done-btn{display:inline-flex;align-items:center;gap:10px;border:0;background:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);padding:0}
 .tsum{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:30px;padding:0 0 4px;scroll-margin-top:28px}
 .tsum .tsec-h{margin-bottom:6px}
 .tsum-v{margin:0;font-size:16px;color:var(--ink);line-height:1.4}
 .tsum-next .tsum-v{color:var(--muted)}
+.tsum-open{cursor:pointer}
 .tsec-foot{margin:14px 0 0}
 .tsec:first-child{margin-top:0}
 .tsec-h{margin:0 0 2px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
@@ -190,7 +185,7 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .note{border-left:4px solid #7A828C;padding:2px 0 2px 18px}
 
 .combo{position:relative;max-width:660px}
-.menu{display:none;position:absolute;top:60px;left:0;right:0;z-index:5;background:#fff;border:1px solid var(--ink);border-radius:4px;box-shadow:0 12px 30px rgba(17,19,21,.12);overflow:hidden}
+.menu{display:none;position:absolute;top:60px;left:0;right:0;z-index:5;background:#fff;border:1px solid var(--ink);border-radius:4px;box-shadow:0 12px 30px rgba(17,19,21,.12);overflow-y:auto;max-height:260px}
 .menu.show{display:block}
 .mi{padding:11px 16px;font-size:15px;cursor:pointer}
 .mi:hover{background:var(--ground)}
@@ -697,6 +692,7 @@ const SECTIONS = [
     complete: function (t) { return this.keys.every(function (k) { return qAnswered(k, t); }); } }
 ];
 let termsClosed = null;
+let termsFocus = null;
 let termsLastActive = null;
 let termsShown = null;
 let termsScrollTarget = null;
@@ -706,36 +702,46 @@ function paintProgress() {
 }
 function commitTerm(f) {
   const t = S.terms;
+  const act = termsLastActive;
+  const closeIfDone = function () {
+    if (act !== null && act > -1 && SECTIONS[act].complete(t)) { termsClosed.add(act); termsFocus = null; }
+  };
   if (f === 'city') {
+    const typed = val('city').trim().toLowerCase();
+    const exact = CITIES.filter(function (c) { return c.toLowerCase() === typed; })[0];
     const first = document.querySelector('#citymenu .mi');
-    const v = first ? first.dataset.city : val('city');
-    if (v) { t.city = v; save(); render(); }
+    const pick = exact || (first ? first.dataset.city : '');
+    if (!pick) return err('t-err', 'Pick a city from the list.');
+    t.city = pick; save(); closeIfDone(); render();
+    return;
+  }
+  if (f === 'relocCity') {
+    const typed = val('relocCityInput').trim().toLowerCase();
+    const exact = CITIES.filter(function (c) { return c.toLowerCase() === typed && t.relocCities.indexOf(c) === -1; })[0];
+    const first = document.querySelector('#relocCityMenu .mi');
+    const pick = exact || (first ? first.dataset.city : '');
+    if (!pick) return err('t-err', 'Pick a city from the list.');
+    t.relocCities.push(pick); save(); render();
     return;
   }
   if (f === 'floor') {
     const d = val('floorinput').replace(/\D/g, '');
-    if (d) { t.floor = parseInt(d, 10); save(); render(); }
+    if (!d) return;
+    t.floor = parseInt(d, 10); save(); closeIfDone(); render();
     return;
   }
   if (f === 'notice') {
     const d = val('noticeweeks').replace(/\D/g, '');
-    if (d) { t.noticeWeeks = parseInt(d, 10); save(); render(); }
-    return;
-  }
-  if (f === 'relocCity') {
-    const first = document.querySelector('#relocCityMenu .mi');
-    const v = (first ? first.dataset.city : val('relocCityInput')).trim();
-    if (v && t.relocCities.indexOf(v) === -1) { t.relocCities.push(v); save(); render(); }
+    if (!d) return;
+    t.noticeWeeks = parseInt(d, 10); save(); closeIfDone(); render();
     return;
   }
   if (f === 'industryOther') {
-    const v = val('industryOther');
-    if (v) { t.industryOtherText = v; if (t.industries.indexOf('Other') === -1) t.industries.push('Other'); save(); render(); }
-    return;
-  }
-  if (f === 'note') {
-    t.note = val('tnote').split(/\s+/).filter(Boolean).slice(0, 1000).join(' ');
-    save(); render();
+    const v = val('industryOther').trim();
+    if (!v) return;
+    t.industryOtherText = v;
+    if (t.industries.indexOf('Other') === -1) t.industries.push('Other');
+    save(); closeIfDone(); render();
   }
 }
 
@@ -1093,7 +1099,8 @@ terms: function () {
     if (done.every(Boolean)) SECTIONS.forEach(function (sec, i) { termsClosed.add(i); });
   }
   let active = -1;
-  for (let i = 0; i < SECTIONS.length; i++) { if (!termsClosed.has(i)) { active = i; break; } }
+  if (termsFocus !== null) active = termsFocus;
+  else for (let i = 0; i < SECTIONS.length; i++) { if (!termsClosed.has(i)) { active = i; break; } }
 
   const shownKeys = [];
   if (active > -1) {
@@ -1129,32 +1136,24 @@ terms: function () {
       return '<button class="chip sm ' + (t[q.key].indexOf(o[0]) > -1 ? 'on' : '') + '" data-act="multipick" data-key="' + q.key + '" data-id="' + o[0] + '">' + o[1] + '</button>';
     }).join('') + '</div>';
   };
-  const tickBtn = function (f, filled) {
-    return '<button class="tick' + (filled ? ' on' : '') + '" data-act="term-commit" data-f="' + f + '" aria-label="Save">' + tick() + '</button>';
-  };
   const control = function (k) {
-    if (k === 'city') return '<div class="combo tickin"><input class="field slim" id="city" placeholder="Start typing a city" autocomplete="off" value="' + esc(t.city) + '">' +
-      tickBtn('city', !!t.city) + '<div class="menu" id="citymenu"></div></div>';
-    if (k === 'floor') return '<div class="moneyrow slim"><span>₹</span><div class="tickin"><input class="field slim" id="floorinput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="e.g. 48" value="' + (t.floor || '') + '">' +
-      tickBtn('floor', !!t.floor) + '</div><span>LPA</span></div>';
+    if (k === 'city') return '<div class="combo"><input class="field slim" id="city" placeholder="Start typing, then pick from the list" autocomplete="off" value="' + esc(t.city) + '"><div class="menu" id="citymenu"></div></div>';
+    if (k === 'floor') return '<div class="moneyrow slim"><span>₹</span><input class="field slim" id="floorinput" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="e.g. 48" value="' + (t.floor || '') + '"><span>LPA</span></div>';
     if (k === 'days' || k === 'trial') return multiChips(findQ(k));
     if (k === 'reloc') return chips(findQ(k)) + (t.reloc === 'yes'
-      ? '<div class="combo tickin"><input class="field slim" id="relocCityInput" placeholder="Type any city, then Enter or the tick" autocomplete="off">' +
-        tickBtn('relocCity', false) + '<div class="menu" id="relocCityMenu"></div></div>' +
+      ? '<div class="combo"><input class="field slim" id="relocCityInput" placeholder="Start typing, then pick from the list" autocomplete="off"><div class="menu" id="relocCityMenu"></div></div>' +
         (t.relocCities.length ? '<div class="chips tight">' + t.relocCities.map(function (n) {
           return '<button class="chip xs on" data-act="relocCityRemove" data-city="' + esc(n) + '">' + esc(n) + ' ×</button>';
         }).join('') + '</div>' : '')
       : '');
     if (k === 'start') return chips(findQ(k)) + (t.start === 'notice'
-      ? '<div class="moneyrow slim"><div class="tickin"><input class="field slim" id="noticeweeks" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="e.g. 4" value="' + (t.noticeWeeks || '') + '">' +
-        tickBtn('notice', !!t.noticeWeeks) + '</div><span>weeks</span></div>'
+      ? '<div class="moneyrow slim"><input class="field slim" id="noticeweeks" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="e.g. 4" value="' + (t.noticeWeeks || '') + '"><span>weeks</span></div>'
       : '');
     if (k === 'industry') return chips(findQ(k)) + (t.industry === 'some'
       ? '<div class="chips tight">' + INDUSTRIES.concat(['Other']).map(function (n) {
           return '<button class="chip xs ' + (t.industries.indexOf(n) > -1 ? 'on' : '') + '" data-act="ind" data-n="' + n + '">' + n + '</button>';
         }).join('') + '</div>' +
-        (t.industries.indexOf('Other') > -1 ? '<div class="tickin"><input class="field slim" id="industryOther" placeholder="Which one?" autocomplete="off" value="' + esc(t.industryOtherText) + '">' +
-          tickBtn('industryOther', !!t.industryOtherText) + '</div>' : '')
+        (t.industries.indexOf('Other') > -1 ? '<input class="field slim" id="industryOther" placeholder="Which one? Then Enter" autocomplete="off" value="' + esc(t.industryOtherText) + '">' : '')
       : '');
     return chips(findQ(k));
   };
@@ -1164,7 +1163,7 @@ terms: function () {
       return '<div class="panel mt' + cls + '"><p class="fname">What are you actually looking for? <span class="accenttext">Highly recommended</span></p>' +
         '<p class="fine">In your own words, what and why. The more specific, the better we can go find it.</p>' +
         '<textarea class="field area" id="tnote" rows="6" placeholder="What you want next, and why.">' + esc(t.note) + '</textarea>' +
-        '<div class="note-foot"><span class="mono tiny dim" id="tnote-count">' + words + ' / 1000 words</span>' + tickBtn('note', !!t.note) + '</div></div>';
+        '<p class="mono tiny dim" id="tnote-count">' + words + ' / 1000 words</p></div>';
     }
     const q = findQ(k);
     return '<div class="qrow' + cls + '" id="row-' + k + '"><div class="qlab"><p class="qt">' + q.title.replace(/\?$/, '') + '</p>' +
@@ -1186,10 +1185,10 @@ terms: function () {
         if (k === 'reloc' && t.reloc === 'yes' && t.relocCities.length) v += ' · ' + t.relocCities.join(', ');
         return v;
       }).filter(Boolean).join(' · ');
-      return '<div class="tsum" id="tsec-' + i + '"><div><p class="tsec-h">' + head + '</p><p class="tsum-v">' + esc(vals) + '</p></div>' +
-        '<button class="linkbtn mono tiny" data-act="term-edit" data-i="' + i + '">Edit</button></div>';
+      return '<div class="tsum tsum-open" id="tsec-' + i + '" data-act="term-open" data-i="' + i + '" role="button"><div><p class="tsec-h">' + head + '</p><p class="tsum-v">' + esc(vals) + '</p></div>' +
+        '<span class="linkbtn mono tiny">Edit</span></div>';
     }
-    return '<div class="tsum tsum-next" id="tsec-' + i + '"><div><p class="tsec-h">' + head + '</p><p class="tsum-v">Up next</p></div></div>';
+    return '<div class="tsum tsum-next tsum-open" id="tsec-' + i + '" data-act="term-open" data-i="' + i + '" role="button"><div><p class="tsec-h">' + head + '</p><p class="tsum-v">Up next</p></div></div>';
   }).join('');
   const bars = SECTIONS.map(function (sec, i) { return '<i class="' + (termsClosed.has(i) ? 'on' : '') + '"></i>'; }).join('');
   return '<div class="page">' + topbar(esc(S.auth.email)) + stepper(3) +
@@ -1320,7 +1319,7 @@ function aLogo() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill=
 
 function render() {
   const el = document.getElementById('screen');
-  if (S.screen !== 'terms') { termsClosed = null; termsLastActive = null; termsShown = null; }
+  if (S.screen !== 'terms') { termsClosed = null; termsFocus = null; termsLastActive = null; termsShown = null; }
   if (S.screen !== 'builder') builderSeen = null;
   el.innerHTML = (VIEWS[S.screen] || VIEWS.curtain)();
   wire();
@@ -1434,35 +1433,29 @@ function wire() {
     inp.focus();
   });
 
-  // city typeahead
+  // city: choose from the list only. Clicking the box opens the full list.
   const city = document.getElementById('city');
   if (city) {
     const menu = document.getElementById('citymenu');
     const draw = function () {
-      const q = city.value.toLowerCase();
-      const hits = CITIES.filter(function (c) { return !q || c.toLowerCase().indexOf(q) > -1; }).slice(0, 7);
-      menu.innerHTML = hits.map(function (c) { return '<div class="mi" data-city="' + c + '">' + c + '</div>'; }).join('');
+      const q = city.value.trim().toLowerCase();
+      const hits = CITIES.filter(function (c) { return !q || c.toLowerCase().indexOf(q) > -1; });
+      menu.innerHTML = hits.map(function (c) { return '<div class="mi" data-city="' + esc(c) + '">' + esc(c) + '</div>'; }).join('');
       menu.classList.toggle('show', hits.length > 0);
     };
     city.addEventListener('focus', draw);
+    city.addEventListener('click', draw);
     city.addEventListener('input', draw);
     menu.addEventListener('mousedown', function (e) {
       const mi = e.target.closest('.mi');
       if (!mi) return;
       e.preventDefault();
-      S.terms.city = mi.dataset.city;
-      save(); render();
+      S.terms.city = mi.dataset.city; save(); render();
     });
     city.addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      commitTerm('city');
+      if (e.key === 'Enter') { e.preventDefault(); commitTerm('city'); }
     });
-    city.addEventListener('blur', function () {
-      setTimeout(function () { menu.classList.remove('show'); }, 120);
-      const v = city.value.trim();
-      if (v) { S.terms.city = v; save(); }
-    });
+    city.addEventListener('blur', function () { setTimeout(function () { menu.classList.remove('show'); }, 120); });
   }
 
   document.querySelectorAll('[id^="burl-"], [id^="bother-"]').forEach(function (el) {
@@ -1475,14 +1468,6 @@ function wire() {
     });
   });
 
-  document.querySelectorAll('.tickin').forEach(function (wrap) {
-    const field = wrap.querySelector('input');
-    const btn = wrap.querySelector('.tick');
-    if (field && btn) field.addEventListener('input', function () { btn.classList.toggle('on', field.value.trim() !== ''); });
-  });
-  const noteField = document.getElementById('tnote');
-  const noteTick = document.querySelector('.note-foot .tick');
-  if (noteField && noteTick) noteField.addEventListener('input', function () { noteTick.classList.toggle('on', noteField.value.trim() !== ''); });
   [['floorinput', 'floor'], ['noticeweeks', 'notice'], ['industryOther', 'industryOther']].forEach(function (pair) {
     const el = document.getElementById(pair[0]);
     if (el) el.addEventListener('keydown', function (e) {
@@ -1523,46 +1508,28 @@ function wire() {
     });
   }
 
-  // relocation cities: typeahead that adds to a list instead of one value.
-  // The suggestion list is a curated ~35 cities, not exhaustive, so a city
-  // that isn't in it can still be added directly: "Add '<what you typed>'"
-  // shows up as its own option, and Enter adds it without needing a click.
+  // relocation cities: choose from the list only; Enter adds the pick
   const relocCityInput = document.getElementById('relocCityInput');
   if (relocCityInput) {
     const menu = document.getElementById('relocCityMenu');
-    const addCity = function (name) {
-      const c = name.trim();
-      if (!c || S.terms.relocCities.indexOf(c) > -1) return;
-      S.terms.relocCities.push(c);
-      relocCityInput.value = '';
-      save(); render();
-    };
     const draw = function () {
-      const raw = relocCityInput.value.trim();
-      const q = raw.toLowerCase();
-      const hits = CITIES.filter(function (c) {
-        return (!q || c.toLowerCase().indexOf(q) > -1) && S.terms.relocCities.indexOf(c) === -1;
-      }).slice(0, 6);
-      let html = hits.map(function (c) { return '<div class="mi" data-city="' + esc(c) + '">' + esc(c) + '</div>'; }).join('');
-      const exact = CITIES.some(function (c) { return c.toLowerCase() === q; });
-      if (raw && !exact && S.terms.relocCities.indexOf(raw) === -1) {
-        html += '<div class="mi" data-city="' + esc(raw) + '">Add "' + esc(raw) + '"</div>';
-      }
-      menu.innerHTML = html;
-      menu.classList.toggle('show', html.length > 0);
+      const q = relocCityInput.value.trim().toLowerCase();
+      const hits = CITIES.filter(function (c) { return S.terms.relocCities.indexOf(c) === -1 && (!q || c.toLowerCase().indexOf(q) > -1); });
+      menu.innerHTML = hits.map(function (c) { return '<div class="mi" data-city="' + esc(c) + '">' + esc(c) + '</div>'; }).join('');
+      menu.classList.toggle('show', hits.length > 0);
     };
     relocCityInput.addEventListener('focus', draw);
+    relocCityInput.addEventListener('click', draw);
     relocCityInput.addEventListener('input', draw);
     relocCityInput.addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      commitTerm('relocCity');
+      if (e.key === 'Enter') { e.preventDefault(); commitTerm('relocCity'); }
     });
     menu.addEventListener('mousedown', function (e) {
       const mi = e.target.closest('.mi');
       if (!mi) return;
       e.preventDefault();
-      addCity(mi.dataset.city);
+      if (S.terms.relocCities.indexOf(mi.dataset.city) === -1) S.terms.relocCities.push(mi.dataset.city);
+      save(); render();
     });
     relocCityInput.addEventListener('blur', function () { setTimeout(function () { menu.classList.remove('show'); }, 120); });
   }
@@ -1587,6 +1554,8 @@ function wire() {
         words = words.slice(0, 1000);
         noteEl.value = words.join(' ');
       }
+      S.terms.note = words.join(' ');
+      save();
       if (noteCount) noteCount.textContent = words.length + ' / 1000 words';
     };
     noteEl.addEventListener('input', update);
@@ -1833,9 +1802,8 @@ multipick: function (t) {
   if (at > -1) list.splice(at, 1); else list.push(id);
   save(); render();
 },
-'term-edit': function (t) { termsClosed.delete(Number(t.dataset.i)); render(); },
-'term-done': function (t) { termsClosed.add(Number(t.dataset.i)); render(); },
-'term-commit': function (t) { commitTerm(t.dataset.f); },
+'term-open': function (t) { termsFocus = Number(t.dataset.i); render(); },
+'term-done': function (t) { termsClosed.add(Number(t.dataset.i)); termsFocus = null; render(); },
 'terms-submit': async function () {
   const c = val('city');
   if (c) S.terms.city = c;
@@ -1861,6 +1829,7 @@ multipick: function (t) {
   const open = SECTIONS.findIndex(function (sec) { return !sec.complete(S.terms); });
   if (open > -1) {
     termsClosed.delete(open);
+    termsFocus = open;
     termsScrollTarget = 'tsec-' + open;
     render();
     return err('t-err', 'Still to do: ' + SECTIONS[open].title + '.');
